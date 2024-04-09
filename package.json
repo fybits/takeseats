@@ -1,0 +1,32 @@
+{
+  "name": "takeseats",
+  "version": "1.0.0",
+  "description": "",
+  "source": "src/index.html",
+  "scripts": {
+    "start": "parcel",
+    "build": "parcel --public-url './' build",
+    "predeploy": "pnpm build",
+    "deploy": "gh-pages -d dist",
+    "test": "echo \"Error: no test specified\" && exit 1"
+  },
+  "keywords": [],
+  "author": "",
+  "license": "ISC",
+  "devDependencies": {
+    "@parcel/transformer-sass": "2.12.0",
+    "gh-pages": "^6.1.1",
+    "parcel": "^2.12.0"
+  },
+  "dependencies": {
+    "peerjs": "^1.5.2",
+    "pixi.js": "^8.0.5"
+  },
+  "pnpm": {
+    "peerDependencyRules": {
+      "allowedVersions": {
+        "svgo": "2.8.0"
+      }
+    }
+  }
+}
