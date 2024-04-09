@@ -10,15 +10,22 @@
 </head>
 
 <body>
-    <div class="lobby-controls">
-        <input id="nickname" name="nickname" />
-        <button id="host">Host</button>
-        <input id="lobby" name="lobby" />
-        <button id="join">Join</button>
-    </div>
-    <p id="error"></p>
-    <div id="canvas-container">
-        <canvas></canvas>
+    <canvas></canvas>
+    <div id="ui">
+        <div id="lobby-controls">
+            <div>
+                <label>nickname</label>
+                <br>
+                <input id="nickname" name="nickname" />
+                <button id="host">Host</button>
+            </div>
+            <div>
+                <label>lobby name</label>
+                <br>
+                <input id="lobby" name="lobby" />
+                <button id="join">Join</button>
+            </div>
+        </div>
     </div>
     <script src="/src/app.ts" type="module" async defer></script>
 </body>

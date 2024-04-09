@@ -4,10 +4,12 @@
   "description": "",
   "source": "src/index.html",
   "scripts": {
-    "start": "parcel",
-    "build": "parcel --public-url './' build",
-    "predeploy": "pnpm build",
-    "deploy": "gh-pages -d dist",
+    "clean": "rm -rf dist && mkdir dist",
+    "copy-assets": "cp -r ./assets ./dist/assets",
+    "init": "pnpm clean && pnpm copy-assets",
+    "start": "pnpm run init && parcel",
+    "build": "pnpm run init && parcel build --public-url './'",
+    "deploy": "pnpm build && gh-pages -d dist",
     "test": "echo \"Error: no test specified\" && exit 1"
   },
   "keywords": [],
@@ -16,10 +18,12 @@
   "devDependencies": {
     "@parcel/transformer-sass": "2.12.0",
     "gh-pages": "^6.1.1",
-    "parcel": "^2.12.0"
+    "parcel": "^2.12.0",
+    "process": "^0.11.10"
   },
   "dependencies": {
     "peerjs": "^1.5.2",
+    "pixi-filters": "^6.0.0",
     "pixi.js": "^8.0.5"
   },
   "pnpm": {
