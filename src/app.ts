@@ -1,10 +1,14 @@
 
-import { Application, } from 'pixi.js';
+import { Application, autoDetectRenderer } from 'pixi.js';
 import { PeerRoom } from './PeerRoom';
 import Controls from './Controls';
 import Camera from './game-objects/Camera';
 import GameManager from './GameManager';
 import { Vector } from './utils/Vector';
+
+declare global {
+    var gm: GameManager;
+}
 
 const canvas = document.querySelector<HTMLCanvasElement>('canvas')!;
 canvas.tabIndex = 0;
@@ -29,7 +33,8 @@ let room: PeerRoom | null = null;
 (async () => {
 
     const app = new Application();
-    await app.init({ canvas: canvas, resizeTo: window, backgroundColor: '#1E553E' });
+    await app.init({ canvas: canvas, resizeTo: window, backgroundColor: '#1E553E', antialias: true, roundPixels: true });
+    // app.renderer = await autoDetectRenderer({ canvas: canvas, roundPixels: true, resolution: 0.25, antialias: true, width: window.innerWidth * 4, height: window.innerHeight * 4 })
     const camera = new Camera();
     app.stage.addChild(camera);
 
@@ -44,6 +49,7 @@ let room: PeerRoom | null = null;
         }
         lobbyControlsContainer.hidden = true;
         const gameManager = new GameManager(app, camera, room);
+        globalThis.gm = gameManager;
         room.on("message", (address, { type, message }) => {
             switch (type) {
                 case 'player-cursor':

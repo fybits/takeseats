@@ -1,0 +1,376 @@
+{
+  "frames": {
+    "card1": {
+      "frame": {
+        "x": 0,
+        "y": 0,
+        "w": 800,
+        "h": 1120
+      },
+      "sourceSize": {
+        "w": 800,
+        "h": 1120
+      },
+      "spriteSourceSize": {
+        "x": 0,
+        "y": 0,
+        "w": 800,
+        "h": 1120
+      }
+    },
+    "card2": {
+      "frame": {
+        "x": 800,
+        "y": 0,
+        "w": 800,
+        "h": 1120
+      },
+      "sourceSize": {
+        "w": 800,
+        "h": 1120
+      },
+      "spriteSourceSize": {
+        "x": 0,
+        "y": 0,
+        "w": 800,
+        "h": 1120
+      }
+    },
+    "card3": {
+      "frame": {
+        "x": 1600,
+        "y": 0,
+        "w": 800,
+        "h": 1120
+      },
+      "sourceSize": {
+        "w": 800,
+        "h": 1120
+      },
+      "spriteSourceSize": {
+        "x": 0,
+        "y": 0,
+        "w": 800,
+        "h": 1120
+      }
+    },
+    "card4": {
+      "frame": {
+        "x": 2400,
+        "y": 0,
+        "w": 800,
+        "h": 1120
+      },
+      "sourceSize": {
+        "w": 800,
+        "h": 1120
+      },
+      "spriteSourceSize": {
+        "x": 0,
+        "y": 0,
+        "w": 800,
+        "h": 1120
+      }
+    },
+    "card5": {
+      "frame": {
+        "x": 0,
+        "y": 1120,
+        "w": 800,
+        "h": 1120
+      },
+      "sourceSize": {
+        "w": 800,
+        "h": 1120
+      },
+      "spriteSourceSize": {
+        "x": 0,
+        "y": 0,
+        "w": 800,
+        "h": 1120
+      }
+    },
+    "card6": {
+      "frame": {
+        "x": 800,
+        "y": 1120,
+        "w": 800,
+        "h": 1120
+      },
+      "sourceSize": {
+        "w": 800,
+        "h": 1120
+      },
+      "spriteSourceSize": {
+        "x": 0,
+        "y": 0,
+        "w": 800,
+        "h": 1120
+      }
+    },
+    "card7": {
+      "frame": {
+        "x": 1600,
+        "y": 1120,
+        "w": 800,
+        "h": 1120
+      },
+      "sourceSize": {
+        "w": 800,
+        "h": 1120
+      },
+      "spriteSourceSize": {
+        "x": 0,
+        "y": 0,
+        "w": 800,
+        "h": 1120
+      }
+    },
+    "card8": {
+      "frame": {
+        "x": 2400,
+        "y": 1120,
+        "w": 800,
+        "h": 1120
+      },
+      "sourceSize": {
+        "w": 800,
+        "h": 1120
+      },
+      "spriteSourceSize": {
+        "x": 0,
+        "y": 0,
+        "w": 800,
+        "h": 1120
+      }
+    },
+    "card9": {
+      "frame": {
+        "x": 0,
+        "y": 2240,
+        "w": 800,
+        "h": 1120
+      },
+      "sourceSize": {
+        "w": 800,
+        "h": 1120
+      },
+      "spriteSourceSize": {
+        "x": 0,
+        "y": 0,
+        "w": 800,
+        "h": 1120
+      }
+    },
+    "card10": {
+      "frame": {
+        "x": 800,
+        "y": 2240,
+        "w": 800,
+        "h": 1120
+      },
+      "sourceSize": {
+        "w": 800,
+        "h": 1120
+      },
+      "spriteSourceSize": {
+        "x": 0,
+        "y": 0,
+        "w": 800,
+        "h": 1120
+      }
+    },
+    "card11": {
+      "frame": {
+        "x": 1600,
+        "y": 2240,
+        "w": 800,
+        "h": 1120
+      },
+      "sourceSize": {
+        "w": 800,
+        "h": 1120
+      },
+      "spriteSourceSize": {
+        "x": 0,
+        "y": 0,
+        "w": 800,
+        "h": 1120
+      }
+    },
+    "card12": {
+      "frame": {
+        "x": 2400,
+        "y": 2240,
+        "w": 800,
+        "h": 1120
+      },
+      "sourceSize": {
+        "w": 800,
+        "h": 1120
+      },
+      "spriteSourceSize": {
+        "x": 0,
+        "y": 0,
+        "w": 800,
+        "h": 1120
+      }
+    },
+    "card13": {
+      "frame": {
+        "x": 0,
+        "y": 3360,
+        "w": 800,
+        "h": 1120
+      },
+      "sourceSize": {
+        "w": 800,
+        "h": 1120
+      },
+      "spriteSourceSize": {
+        "x": 0,
+        "y": 0,
+        "w": 800,
+        "h": 1120
+      }
+    },
+    "card14": {
+      "frame": {
+        "x": 800,
+        "y": 3360,
+        "w": 800,
+        "h": 1120
+      },
+      "sourceSize": {
+        "w": 800,
+        "h": 1120
+      },
+      "spriteSourceSize": {
+        "x": 0,
+        "y": 0,
+        "w": 800,
+        "h": 1120
+      }
+    },
+    "card15": {
+      "frame": {
+        "x": 1600,
+        "y": 3360,
+        "w": 800,
+        "h": 1120
+      },
+      "sourceSize": {
+        "w": 800,
+        "h": 1120
+      },
+      "spriteSourceSize": {
+        "x": 0,
+        "y": 0,
+        "w": 800,
+        "h": 1120
+      }
+    },
+    "card16": {
+      "frame": {
+        "x": 2400,
+        "y": 3360,
+        "w": 800,
+        "h": 1120
+      },
+      "sourceSize": {
+        "w": 800,
+        "h": 1120
+      },
+      "spriteSourceSize": {
+        "x": 0,
+        "y": 0,
+        "w": 800,
+        "h": 1120
+      }
+    },
+    "card17": {
+      "frame": {
+        "x": 3200,
+        "y": 3360,
+        "w": 800,
+        "h": 1120
+      },
+      "sourceSize": {
+        "w": 800,
+        "h": 1120
+      },
+      "spriteSourceSize": {
+        "x": 0,
+        "y": 0,
+        "w": 800,
+        "h": 1120
+      }
+    },
+    "card18": {
+      "frame": {
+        "x": 4000,
+        "y": 3360,
+        "w": 800,
+        "h": 1120
+      },
+      "sourceSize": {
+        "w": 800,
+        "h": 1120
+      },
+      "spriteSourceSize": {
+        "x": 0,
+        "y": 0,
+        "w": 800,
+        "h": 1120
+      }
+    },
+    "card19": {
+      "frame": {
+        "x": 4800,
+        "y": 3360,
+        "w": 800,
+        "h": 1120
+      },
+      "sourceSize": {
+        "w": 800,
+        "h": 1120
+      },
+      "spriteSourceSize": {
+        "x": 0,
+        "y": 0,
+        "w": 800,
+        "h": 1120
+      }
+    },
+    "card20": {
+      "frame": {
+        "x": 5600,
+        "y": 3360,
+        "w": 800,
+        "h": 1120
+      },
+      "sourceSize": {
+        "w": 800,
+        "h": 1120
+      },
+      "spriteSourceSize": {
+        "x": 0,
+        "y": 0,
+        "w": 800,
+        "h": 1120
+      }
+    }
+  },
+  "animations": {},
+  "meta": {
+    "app": "http://www.codeandweb.com/texturepacker",
+    "version": "1.0",
+    "image": "spritesheet.jpg",
+    "format": "RGBA8888",
+    "size": {
+      "w": 6400,
+      "h": 4480
+    },
+    "scale": "1"
+  }
+}

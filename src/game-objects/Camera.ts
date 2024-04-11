@@ -1,6 +1,6 @@
 import { Container, Texture } from "pixi.js";
 import { Vector } from "../utils/Vector";
-import IUpdatable from "./IUpdate";
+import IUpdatable from "./interfaces/IUpdatable";
 
 
 export default class Camera extends Container implements IUpdatable {
@@ -17,7 +17,7 @@ export default class Camera extends Container implements IUpdatable {
     }
 
     screenToWorldPoint(screenPosition: Vector) {
-        return new Vector((-this.position.x + screenPosition.x) / this.zoom, (-this.position.y + screenPosition.y) / this.zoom);
+        return new Vector((this.pivot.x * this.zoom - this.position.x + screenPosition.x) / this.zoom, (this.pivot.y * this.zoom - this.position.y + screenPosition.y) / this.zoom);
     }
 
     update(dt: number) {
@@ -25,8 +25,8 @@ export default class Camera extends Container implements IUpdatable {
         this.zoom = + this.zoom + dZoom * dt / 15
         this.scale.x = this.zoom;
         this.scale.y = this.zoom;
-        const dPos = { x: this.desiredPosition.x - this.position.x, y: this.desiredPosition.y - this.position.y };
-        this.position.x = this.position.x + dPos.x * dt / 15;
-        this.position.y = this.position.y + dPos.y * dt / 15;
+        const dPos = { x: this.desiredPosition.x - this.pivot.x, y: this.desiredPosition.y - this.pivot.y };
+        this.pivot.x = this.pivot.x + dPos.x * dt / 15;
+        this.pivot.y = this.pivot.y + dPos.y * dt / 15;
     }
 }
