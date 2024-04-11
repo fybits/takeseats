@@ -1,5 +1,5 @@
 export default interface IRollable {
-    roll(): void;
+    roll(randSeeded: () => number): void;
 }
 
 export const isIRollable = (object: any): object is IRollable => {

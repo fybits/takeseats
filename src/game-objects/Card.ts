@@ -1,7 +1,6 @@
-import { Container, Graphics, NineSliceGeometry, NineSliceSprite, RoundedRectangle, Sprite, Texture } from "pixi.js";
+import { Graphics, Sprite, Texture } from "pixi.js";
 import IDraggable from "./interfaces/IDraggable";
-import { DropShadowFilter, OutlineFilter } from "pixi-filters";
-import GameManager from "../GameManager";
+import { OutlineFilter } from "pixi-filters";
 import IStackable, { isIStackable } from "./interfaces/IStackable";
 import Stack from "./Stack";
 import GameObject from "./GameObject";
@@ -28,25 +27,33 @@ export default class Card extends GameObject implements IDraggable, IStackable, 
         this.eventMode = 'static';
         this.on('pointerdown', this.onDragStart);
         this.on('pointerup', () => {
-            console.log('try stacking')
             if (gm.dragTarget && isIStackable(gm.dragTarget)) {
                 this.onStack(gm.dragTarget);
+                gm.room.send({
+                    type: 'stack-object',
+                    message: {
+                        target: this.uid,
+                        object_to_stack: gm.dragTarget.uid,
+                    }
+                })
             }
         });
         this.on('pointerover', () => {
-            this.filters = new OutlineFilter({ thickness: 5, color: 'yellow' })
+            this.addFilter('outline', new OutlineFilter({ thickness: 5, color: 'yellow' }));
             this.cursor = "grab";
             gm.target = this;
         });
         this.on('pointerout', () => {
-            this.filters = [];
+            this.removeFilter('outline');
             gm.target = null;
         });
-
+        console.log(this.uid)
+    }
+    onTakeFromStack(): GameObject | null {
+        throw new Error("Method not implemented.");
     }
 
     flip(): void {
-        console.log('flip')
         if (this.currentGraphics.texture === this.face) {
             this.currentGraphics.texture = this.back;
         } else {
@@ -55,7 +62,6 @@ export default class Card extends GameObject implements IDraggable, IStackable, 
     }
 
     onStack(item: GameObject & IStackable): void {
-        console.log('Stacking')
         const stack = new Stack([this, item])
         const parent = this.parent;
         this.removeFromParent();
@@ -67,17 +73,12 @@ export default class Card extends GameObject implements IDraggable, IStackable, 
     }
 
     onDragStart(): void {
-        console.log(`Started dragging ${this.label}`);
-        this.filters = [new DropShadowFilter({ blur: 2, offset: { x: 4, y: 20 }, pixelSize: { x: 1, y: 1 } })]
         gm.onDragStart(this);
     }
 
     onDrag(): void {
-        console.log(`Dragging ${this.label}`);
     }
 
     onDragEnd(): void {
-        console.log(`Stopped dragging ${this.label}`);
-        this.filters = [];
     }
 }

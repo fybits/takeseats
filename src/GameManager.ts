@@ -1,16 +1,18 @@
-import { Application, NineSliceSprite, Assets, Texture, Sprite, Container, FederatedPointerEvent, Spritesheet, } from 'pixi.js';
-import { OutlineFilter } from "pixi-filters"
+import { Application, Assets, Texture, Sprite, Container, FederatedPointerEvent, Spritesheet, } from 'pixi.js';
+import { DropShadowFilter } from "pixi-filters"
 import Camera from './game-objects/Camera';
 import { DataEventData, PeerRoom } from './PeerRoom';
 import { isIUpdatable } from './game-objects/interfaces/IUpdatable';
 import Controls, { KeyState } from './Controls';
 import { Vector } from './utils/Vector';
 import Card from './game-objects/Card';
-import IDraggable from './game-objects/interfaces/IDraggable';
+import IDraggable, { isIDraggable } from './game-objects/interfaces/IDraggable';
 import GameObject from './game-objects/GameObject';
 import { isIFlipable } from './game-objects/interfaces/IFlipable';
 import { isIRollable } from './game-objects/interfaces/IRollable';
 import Stack from './game-objects/Stack';
+import { isIStackable } from './game-objects/interfaces/IStackable';
+import rand from './utils/random';
 
 interface Player {
     position: Vector;
@@ -19,7 +21,7 @@ interface Player {
 export default class GameManager {
     app: Application;
     camera: Camera;
-    private room: PeerRoom;
+    room: PeerRoom;
 
     players: Map<string, Player>;
 
@@ -28,6 +30,72 @@ export default class GameManager {
         this.camera = camera;
         this.room = room;
         this.players = new Map<string, Player>();
+
+        room.on("message", (address, { type, message }) => {
+            switch (type) {
+                case 'player-cursor':
+                    if (address !== room?.address()) {
+                        this.onPlayerCursor(address, message);
+                    }
+                    break;
+                case 'move-start-object':
+                    if (address !== room?.address()) {
+                        const item = this.camera.children.find((item) => item.uid === message.target);
+                        if (item) {
+                            this.onMoveStart(item as GameObject);
+                        }
+                    }
+                    break;
+                case 'move-object':
+                    if (address !== room?.address()) {
+                        this.onObjectMove(address, message);
+                    }
+                    break;
+                case 'move-end-object':
+                    if (address !== room?.address()) {
+                        const item = this.camera.children.find((item) => item.uid === message.target);
+                        if (item) {
+                            this.onMoveEnd(item as GameObject);
+                        }
+                    }
+                    break;
+                case 'rotate-object':
+                    if (address !== room?.address()) {
+                        const item = this.camera.children.find((item) => item.uid === message.target);
+                        if (item) {
+                            item.angle = message.angle;
+                        }
+                    }
+                    break;
+                case 'roll-object':
+                    if (address !== room?.address()) {
+                        const item = this.camera.children.find((item) => item.uid === message.target);
+                        if (item && isIRollable(item)) {
+                            item.roll(rand(message.seed));
+                        }
+                    }
+                    break;
+                case 'flip-object':
+                    if (address !== room?.address()) {
+                        const item = this.camera.children.find((item) => item.uid === message.target);
+                        if (item && isIFlipable(item)) {
+                            item.flip();
+                        }
+                    }
+                    break;
+                case 'stack-object':
+                    if (address !== room?.address()) {
+                        this.onObjectStack(address, message);
+                    }
+                    break;
+                case 'take-object-from-stack':
+                    if (address !== room?.address()) {
+                        this.onTakeObjectFromStack(address, message);
+                    }
+                    break;
+
+            }
+        });
     };
 
 
@@ -41,37 +109,75 @@ export default class GameManager {
                 position: data.position,
             };
             this.players.set(address, player);
-            const cursorSprite = new Sprite({ texture: Texture.from('cursor'), width: 24, height: 24, x: player.position.x, y: player.position.y });
+            const cursorSprite = new Sprite({ texture: Texture.from('cursor'), width: 24, height: 24, x: player.position.x, y: player.position.y, zIndex: 1000 });
             cursorSprite.label = address;
             this.camera.addChild(cursorSprite)
         }
     }
+
     onObjectMove(address: string, data: Extract<DataEventData, { type: 'move-object' }>["message"]) {
-        const item = this.camera.children.find((item) => item.label === data.label);
+        const item = this.camera.children.find((item) => item.uid === data.target);
         if (item) {
             item.position = data.position;
+        }
+    }
+
+    onObjectStack(address: string, data: Extract<DataEventData, { type: 'stack-object' }>["message"]) {
+        const target = this.camera.children.find((i) => i.uid === data.target);
+        const item = this.camera.children.find((i) => i.uid === data.object_to_stack);
+        if (isIStackable(target) && isIStackable(item)) {
+            target.onStack(item);
+        }
+    }
+
+    onTakeObjectFromStack(address: string, data: Extract<DataEventData, { type: 'take-object-from-stack' }>["message"]) {
+        const target = this.camera.children.find((i) => i.uid === data.target);
+        if (isIStackable(target)) {
+            const item = target.onTakeFromStack();
+            if (item)
+                this.onMoveStart(item);
         }
     }
 
     dragTarget: (GameObject & IDraggable) | null;
     target: GameObject | null;
 
+    onMoveStart(target: GameObject) {
+        target.eventMode = 'none';
+        target.zIndex = 100;
+        target.addFilter('shadow', new DropShadowFilter({ blur: 2, offset: { x: 4, y: 20 }, pixelSize: { x: 1, y: 1 } }))
+
+    }
+    onMoveEnd(target: GameObject) {
+        target.eventMode = 'static';
+        target.zIndex = 0;
+        target.removeFilter('shadow');
+    }
+
     onDragStart(item: GameObject & IDraggable) {
         this.dragTarget = item;
-        this.dragTarget.eventMode = 'none';
-        this.dragTarget.zIndex = 100;
+        this.onMoveStart(item)
+        this.room.send({
+            type: 'move-start-object', message: {
+                target: this.dragTarget.uid,
+            }
+        });
         this.app.stage.on('pointermove', this.onDragMove, this);
     }
 
     onDragMove(event: FederatedPointerEvent) {
         if (this.dragTarget) {
             this.dragTarget.onDrag()
+            this.room.send({
+                type: 'move-object', message: {
+                    target: this.dragTarget.uid,
+                    position: new Vector(this.dragTarget.x, this.dragTarget.y),
+                }
+            })
             if (this.dragTarget.parent) {
                 const center = this.camera.screenToWorldPoint(new Vector(event.screen.x, event.screen.y));
-                console.log(this.camera.pivot.x, this.camera.pivot.y)
                 this.dragTarget.x = center.x;
                 this.dragTarget.y = center.y;
-                // this.dragTarget.parent.toLocal(center, undefined, this.dragTarget.position);
             } else {
                 this.onDragEnd();
             }
@@ -80,9 +186,13 @@ export default class GameManager {
 
     onDragEnd() {
         if (this.dragTarget) {
-            this.dragTarget.onDragEnd()
-            this.dragTarget.eventMode = 'static';
-            this.dragTarget.zIndex = 0;
+            this.dragTarget.onDragEnd();
+            this.onMoveEnd(this.dragTarget);
+            this.room.send({
+                type: 'move-end-object', message: {
+                    target: this.dragTarget.uid,
+                }
+            });
             this.app.stage.off('pointermove', this.onDragMove, this);
             this.dragTarget = null;
         }
@@ -111,10 +221,6 @@ export default class GameManager {
         }
         this.camera.addChild(new Stack(cards));
 
-
-
-        // const spritesheet = new Spritesheet(Texture.from('cards-sheet'));
-
         this.app.stage.on('pointerup', this.onDragEnd, this);
         this.app.stage.on('pointerupoutside', this.onDragEnd, this);
         this.app.stage.on('wheel', (event) => {
@@ -123,10 +229,6 @@ export default class GameManager {
 
         this.app.stage.eventMode = 'dynamic';
         this.app.stage.hitArea = this.app.screen;
-
-        // this.camera.addChild(this.createCard("Card1"));
-        // this.camera.addChild(this.createCard("Card2"));
-        // this.camera.addChild(this.createCard("Card3"));
 
         const center = new Vector(this.app.screen.width / 2, this.app.screen.height / 2);
         this.camera.position.x = center.x
@@ -141,14 +243,6 @@ export default class GameManager {
                 if (isIUpdatable(child)) {
                     child.update(ticker.deltaTime);
                 }
-            }
-            if (this.dragTarget) {
-                this.room.send({
-                    type: 'move-object', message: {
-                        label: this.dragTarget.label,
-                        position: new Vector(this.dragTarget.x, this.dragTarget.y),
-                    }
-                })
             }
             const input: Vector = new Vector();
             if (Controls.instance.keyboard.get('w') === KeyState.HELD)
@@ -169,23 +263,66 @@ export default class GameManager {
             if (Controls.instance.keyboard.get('f') === KeyState.PRESSED) {
                 if (this.dragTarget && isIFlipable(this.dragTarget)) {
                     this.dragTarget.flip();
+                    this.room.send({
+                        type: 'flip-object',
+                        message: {
+                            target: this.dragTarget.uid,
+                        }
+                    })
                 } else if (this.target && isIFlipable(this.target)) {
                     this.target.flip();
+                    this.room.send({
+                        type: 'flip-object',
+                        message: {
+                            target: this.target.uid,
+                        }
+                    })
                 }
             }
 
             if (Controls.instance.keyboard.get('r') === KeyState.PRESSED) {
+                const seed = Date.now();
+                const randSeeded = rand(seed);
+
                 if (this.dragTarget && isIRollable(this.dragTarget)) {
-                    this.dragTarget.roll();
+                    this.dragTarget.roll(randSeeded);
+                    this.room.send({
+                        type: 'roll-object',
+                        message: {
+                            target: this.dragTarget.uid,
+                            seed: seed,
+                        }
+                    })
                 } else if (this.target && isIRollable(this.target)) {
-                    this.target.roll();
+                    this.target.roll(randSeeded);
+                    this.room.send({
+                        type: 'roll-object',
+                        message: {
+                            target: this.target.uid,
+                            seed: seed,
+                        }
+                    })
                 }
             }
 
             if (this.dragTarget) {
                 this.dragTarget.angle += angle;
+                this.room.send({
+                    type: 'rotate-object',
+                    message: {
+                        target: this.dragTarget.uid,
+                        angle: this.dragTarget.angle,
+                    }
+                });
             } else if (this.target) {
                 this.target.angle += angle;
+                this.room.send({
+                    type: 'rotate-object',
+                    message: {
+                        target: this.target.uid,
+                        angle: this.target.angle,
+                    }
+                });
             }
             this.room.send({
                 type: 'player-cursor', message: {
