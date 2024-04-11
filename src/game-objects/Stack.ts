@@ -112,6 +112,7 @@ export default class Stack extends GameObject implements IDraggable, IStackable,
             const lastItem = this.items.pop()!;
             lastItem.x = this.x;
             lastItem.y = this.y;
+            lastItem.angle = this.angle;
             gm.camera.addChild(lastItem);
         }
         if (this.items.length === 0) {
