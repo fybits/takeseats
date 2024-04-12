@@ -1,0 +1,24 @@
+{
+    "type": "card",
+    "width": "200",
+    "height": "280",
+    "face": "face.png",
+    "back": "back.png"
+}
+
+{
+    "type": "deck",
+    "sheet": "cards.png",
+    "cols": "8",
+    "rows": "4",
+    "width:": "200",
+    "height": "280",
+    "cards": [
+        {
+            "x": 0,
+            "y": 0,
+            "w": 200,
+            "h": 280
+        }
+    ]
+}
