@@ -5,6 +5,7 @@ import GameObject from "./GameObject";
 import { DropShadowFilter, OutlineFilter } from "pixi-filters";
 import IFlipable, { isIFlipable } from "./interfaces/IFlipable";
 import IRollable from "./interfaces/IRollable";
+import Controls, { KeyState } from "../Controls";
 
 export default class Stack extends GameObject implements IDraggable, IStackable, IFlipable, IRollable {
     items: (GameObject & IStackable)[];
@@ -18,12 +19,6 @@ export default class Stack extends GameObject implements IDraggable, IStackable,
 
         this.on('pointerdown', () => {
             this.onDragStart();
-            gm.room.send({
-                type: 'take-object-from-stack',
-                message: {
-                    target: this.uid,
-                }
-            })
         });
         this.on('pointerup', () => {
             if (gm.dragTarget && isIStackable(gm.dragTarget)) {
@@ -120,9 +115,22 @@ export default class Stack extends GameObject implements IDraggable, IStackable,
         }
         return top || null;
     }
+    getItems(): (GameObject & IStackable)[] {
+        return this.items;
+    }
 
     onDragStart(): void {
+        if (Controls.instance.keyboard.get('shift') === KeyState.HELD) {
+            gm.onDragStart(this);
+            return;
+        }
         const item = this.onTakeFromStack()
+        gm.room.send({
+            type: 'take-object-from-stack',
+            message: {
+                target: this.uid,
+            }
+        })
         if (isIDraggable(item)) {
             item.onDragStart();
         }
@@ -132,7 +140,7 @@ export default class Stack extends GameObject implements IDraggable, IStackable,
     onDragEnd(): void {
     }
     onStack(item: (GameObject & IStackable)): void {
-        this.items.push(item);
+        this.items.push(...item.getItems());
         this.updateGraphics();
         item.removeFromParent();
     }

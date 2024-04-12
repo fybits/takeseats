@@ -61,8 +61,12 @@ export default class Card extends GameObject implements IDraggable, IStackable, 
         }
     }
 
+    getItems(): (GameObject & IStackable)[] {
+        return [this];
+    }
+
     onStack(item: GameObject & IStackable): void {
-        const stack = new Stack([this, item])
+        const stack = new Stack([this, ...item.getItems()])
         const parent = this.parent;
         this.removeFromParent();
         item.removeFromParent();
