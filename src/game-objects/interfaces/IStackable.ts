@@ -1,9 +1,10 @@
 import GameObject from "../GameObject";
 
 export default interface IStackable {
+    stack: (GameObject & IStackable) | null;
     getItems(): (GameObject & IStackable)[];
     onStack(item: IStackable): void;
-    onTakeFromStack(): GameObject | null;
+    onTakeFromStack(item: GameObject & IStackable): GameObject | null;
 }
 
 export const isIStackable = (object: any): object is IStackable => {

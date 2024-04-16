@@ -1,14 +1,18 @@
-import { Container, Filter, Sprite } from "pixi.js";
+import { Container, Filter, Sprite, generateUID, uid } from "pixi.js";
 
 export default class GameObject extends Container {
+    id: number;
     currentGraphics: Sprite;
     filters: Filter[];
     filtersMap: Map<string, Filter>;
 
     constructor() {
         super();
+        this.id = generateUID()
+
         this.filters = [];
         this.filtersMap = new Map<string, Filter>();
+        gm.gameObjects.set(this.id, this);
     }
 
     addFilter(key: string, filter: Filter) {

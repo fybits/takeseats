@@ -1,4 +1,4 @@
-import { Graphics, Sprite } from "pixi.js";
+import { Graphics, Sprite, generateUID, resetUids, uid } from "pixi.js";
 import IStackable, { isIStackable } from "./interfaces/IStackable";
 import IDraggable, { isIDraggable } from "./interfaces/IDraggable";
 import GameObject from "./GameObject";
@@ -10,10 +10,12 @@ import Controls, { KeyState } from "../Controls";
 export default class Stack extends GameObject implements IDraggable, IStackable, IFlipable, IRollable {
     items: (GameObject & IStackable)[];
     mmask: Graphics;
+    stack: (GameObject & IStackable) | null;
 
     constructor(items: (GameObject & IStackable)[]) {
         super();
         this.items = items;
+        this.items.forEach((i) => i.stack = this);
         this.eventMode = 'dynamic';
         this.addFilter('deck-details', new DropShadowFilter({ offset: { x: 0, y: this.items.length * 2 * gm.camera.scale.x }, color: 0xcccccc, blur: 0, alpha: 1 }));
 
@@ -26,8 +28,8 @@ export default class Stack extends GameObject implements IDraggable, IStackable,
                 gm.room.send({
                     type: 'stack-object',
                     message: {
-                        target: this.uid,
-                        object_to_stack: gm.dragTarget.uid,
+                        target: this.id,
+                        object_to_stack: gm.dragTarget.id,
                     }
                 })
             }
@@ -93,18 +95,19 @@ export default class Stack extends GameObject implements IDraggable, IStackable,
         }
     }
 
-    onTakeFromStack(): GameObject | null {
-        const top = this.items.pop();
+    onTakeFromStack(item: GameObject & IStackable): GameObject | null {
+        const itemIndex = this.items.findIndex((i) => i.id === item.id);
+        this.items.splice(itemIndex, 1);
         this.updateGraphics();
-
-        if (top) {
-            top.x = this.x;
-            top.y = this.y;
-            top.angle = this.angle;
-            gm.camera.addChild(top);
-        }
+        item.stack = null;
+        // console.log()
+        item.x = this.x;
+        item.y = this.y;
+        item.angle = this.angle;
+        gm.camera.addChild(item);
         if (this.items.length === 1) {
             const lastItem = this.items.pop()!;
+            lastItem.stack = null;
             lastItem.x = this.x;
             lastItem.y = this.y;
             lastItem.angle = this.angle;
@@ -113,7 +116,7 @@ export default class Stack extends GameObject implements IDraggable, IStackable,
         if (this.items.length === 0) {
             this.destroy();
         }
-        return top || null;
+        return item || null;
     }
     getItems(): (GameObject & IStackable)[] {
         return this.items;
@@ -124,15 +127,21 @@ export default class Stack extends GameObject implements IDraggable, IStackable,
             gm.onDragStart(this);
             return;
         }
-        const item = this.onTakeFromStack()
-        gm.room.send({
-            type: 'take-object-from-stack',
-            message: {
-                target: this.uid,
+        const top = this.items[this.items.length - 1];
+        if (top) {
+            const item = this.onTakeFromStack(top)
+            if (item) {
+                gm.room.send({
+                    type: 'take-object-from-stack',
+                    message: {
+                        target: this.id,
+                        object_from_stack: item?.id,
+                    }
+                })
             }
-        })
-        if (isIDraggable(item)) {
-            item.onDragStart();
+            if (isIDraggable(item)) {
+                item.onDragStart();
+            }
         }
     }
     onDrag(): void {
@@ -140,7 +149,9 @@ export default class Stack extends GameObject implements IDraggable, IStackable,
     onDragEnd(): void {
     }
     onStack(item: (GameObject & IStackable)): void {
-        this.items.push(...item.getItems());
+        const newItems = item.getItems()
+        newItems.forEach(i => i.stack = this);
+        this.items.push(...newItems);
         this.updateGraphics();
         item.removeFromParent();
     }

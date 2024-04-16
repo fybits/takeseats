@@ -10,6 +10,7 @@ export default class Card extends GameObject implements IDraggable, IStackable, 
     face: Texture;
     back: Texture;
     currentGraphics: Sprite;
+    stack: (GameObject & IStackable) | null;
 
     constructor(face: Texture, back: Texture, label: string) {
         super();
@@ -32,8 +33,8 @@ export default class Card extends GameObject implements IDraggable, IStackable, 
                 gm.room.send({
                     type: 'stack-object',
                     message: {
-                        target: this.uid,
-                        object_to_stack: gm.dragTarget.uid,
+                        target: this.id,
+                        object_to_stack: gm.dragTarget.id,
                     }
                 })
             }
@@ -47,7 +48,7 @@ export default class Card extends GameObject implements IDraggable, IStackable, 
             this.removeFilter('outline');
             gm.target = null;
         });
-        console.log(this.uid)
+        console.log(this.id)
     }
     onTakeFromStack(): GameObject | null {
         throw new Error("Method not implemented.");

@@ -23,6 +23,8 @@ export default class GameManager {
     camera: Camera;
     room: PeerRoom;
 
+    gameObjects: Map<number, GameObject>;
+
     players: Map<string, Player>;
 
     constructor(app: Application, camera: Camera, room: PeerRoom) {
@@ -30,6 +32,7 @@ export default class GameManager {
         this.camera = camera;
         this.room = room;
         this.players = new Map<string, Player>();
+        this.gameObjects = new Map<number, GameObject>();
 
         room.on("message", (address, { type, message }) => {
             switch (type) {
@@ -40,7 +43,7 @@ export default class GameManager {
                     break;
                 case 'move-start-object':
                     if (address !== room?.address()) {
-                        const item = this.camera.children.find((item) => item.uid === message.target);
+                        const item = this.gameObjects.get(message.target);
                         if (item) {
                             this.onMoveStart(item as GameObject);
                         }
@@ -53,7 +56,7 @@ export default class GameManager {
                     break;
                 case 'move-end-object':
                     if (address !== room?.address()) {
-                        const item = this.camera.children.find((item) => item.uid === message.target);
+                        const item = this.gameObjects.get(message.target);
                         if (item) {
                             this.onMoveEnd(item as GameObject);
                         }
@@ -61,7 +64,7 @@ export default class GameManager {
                     break;
                 case 'rotate-object':
                     if (address !== room?.address()) {
-                        const item = this.camera.children.find((item) => item.uid === message.target);
+                        const item = this.gameObjects.get(message.target);
                         if (item) {
                             item.angle = message.angle;
                         }
@@ -69,7 +72,7 @@ export default class GameManager {
                     break;
                 case 'roll-object':
                     if (address !== room?.address()) {
-                        const item = this.camera.children.find((item) => item.uid === message.target);
+                        const item = this.gameObjects.get(message.target);
                         if (item && isIRollable(item)) {
                             item.roll(rand(message.seed));
                         }
@@ -77,7 +80,7 @@ export default class GameManager {
                     break;
                 case 'flip-object':
                     if (address !== room?.address()) {
-                        const item = this.camera.children.find((item) => item.uid === message.target);
+                        const item = this.gameObjects.get(message.target);
                         if (item && isIFlipable(item)) {
                             item.flip();
                         }
@@ -116,26 +119,31 @@ export default class GameManager {
     }
 
     onObjectMove(address: string, data: Extract<DataEventData, { type: 'move-object' }>["message"]) {
-        const item = this.camera.children.find((item) => item.uid === data.target);
+        const item = this.gameObjects.get(data.target);
         if (item) {
             item.position = data.position;
         }
     }
 
     onObjectStack(address: string, data: Extract<DataEventData, { type: 'stack-object' }>["message"]) {
-        const target = this.camera.children.find((i) => i.uid === data.target);
-        const item = this.camera.children.find((i) => i.uid === data.object_to_stack);
+        const target = this.gameObjects.get(data.target);
+        const item = this.gameObjects.get(data.object_to_stack);
         if (isIStackable(target) && isIStackable(item)) {
             target.onStack(item);
         }
     }
 
     onTakeObjectFromStack(address: string, data: Extract<DataEventData, { type: 'take-object-from-stack' }>["message"]) {
-        const target = this.camera.children.find((i) => i.uid === data.target);
-        if (isIStackable(target)) {
-            const item = target.onTakeFromStack();
-            if (item)
-                this.onMoveStart(item);
+        const object = this.gameObjects.get(data.object_from_stack);
+        if (isIStackable(object)) {
+            const target = object.stack;
+            console.log(target)
+            if (target && isIStackable(target)) {
+                const item = target.onTakeFromStack(object);
+                if (item)
+                    this.onMoveStart(item);
+            }
+
         }
     }
 
@@ -145,6 +153,9 @@ export default class GameManager {
     onMoveStart(target: GameObject) {
         target.eventMode = 'none';
         target.zIndex = 100;
+        if (!target.parent) {
+            this.camera.addChild(target);
+        }
         target.addFilter('shadow', new DropShadowFilter({ blur: 2, offset: { x: 4, y: 20 }, pixelSize: { x: 1, y: 1 } }))
 
     }
@@ -159,7 +170,7 @@ export default class GameManager {
         this.onMoveStart(item)
         this.room.send({
             type: 'move-start-object', message: {
-                target: this.dragTarget.uid,
+                target: this.dragTarget.id,
             }
         });
         this.app.stage.on('pointermove', this.onDragMove, this);
@@ -170,7 +181,7 @@ export default class GameManager {
             this.dragTarget.onDrag()
             this.room.send({
                 type: 'move-object', message: {
-                    target: this.dragTarget.uid,
+                    target: this.dragTarget.id,
                     position: new Vector(this.dragTarget.x, this.dragTarget.y),
                 }
             })
@@ -190,7 +201,7 @@ export default class GameManager {
             this.onMoveEnd(this.dragTarget);
             this.room.send({
                 type: 'move-end-object', message: {
-                    target: this.dragTarget.uid,
+                    target: this.dragTarget.id,
                 }
             });
             this.app.stage.off('pointermove', this.onDragMove, this);
@@ -266,7 +277,7 @@ export default class GameManager {
                     this.room.send({
                         type: 'flip-object',
                         message: {
-                            target: this.dragTarget.uid,
+                            target: this.dragTarget.id,
                         }
                     })
                 } else if (this.target && isIFlipable(this.target)) {
@@ -274,7 +285,7 @@ export default class GameManager {
                     this.room.send({
                         type: 'flip-object',
                         message: {
-                            target: this.target.uid,
+                            target: this.target.id,
                         }
                     })
                 }
@@ -289,7 +300,7 @@ export default class GameManager {
                     this.room.send({
                         type: 'roll-object',
                         message: {
-                            target: this.dragTarget.uid,
+                            target: this.dragTarget.id,
                             seed: seed,
                         }
                     })
@@ -298,7 +309,7 @@ export default class GameManager {
                     this.room.send({
                         type: 'roll-object',
                         message: {
-                            target: this.target.uid,
+                            target: this.target.id,
                             seed: seed,
                         }
                     })
@@ -310,7 +321,7 @@ export default class GameManager {
                 this.room.send({
                     type: 'rotate-object',
                     message: {
-                        target: this.dragTarget.uid,
+                        target: this.dragTarget.id,
                         angle: this.dragTarget.angle,
                     }
                 });
@@ -319,7 +330,7 @@ export default class GameManager {
                 this.room.send({
                     type: 'rotate-object',
                     message: {
-                        target: this.target.uid,
+                        target: this.target.id,
                         angle: this.target.angle,
                     }
                 });
