@@ -22,6 +22,7 @@ export default class GameObject extends Container {
 
 
     addFilter(key: string, filter: Filter) {
+        filter.antialias = 'on';
         if (!this.filtersMap.has(key)) {
             this.filtersMap.set(key, filter)
             this.filters = [...this.filters, filter];

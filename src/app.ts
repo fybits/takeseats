@@ -1,5 +1,5 @@
 
-import { Application, Assets, Texture, autoDetectRenderer } from 'pixi.js';
+import { Application, Assets, Texture, autoDetectRenderer, loadTextures } from 'pixi.js';
 import { PeerRoom } from './PeerRoom';
 import Controls from './Controls';
 import Camera from './game-objects/Camera';
@@ -45,6 +45,12 @@ function getBase64(file: File): Promise<string> {
     })
 }
 
+export const GetTexture = (key: string) => {
+    const texture = Assets.get<Texture>(key);
+    texture.label = key;
+    return texture;
+}
+
 (async () => {
 
     const app = new Application();
@@ -83,12 +89,18 @@ function getBase64(file: File): Promise<string> {
                 const formData = new FormData(createCardForm);
                 const faceFile = formData.get('face') as File;
                 const backFile: File = formData.get('back') as File;
-                const [faceUrl, backUrl] = await Promise.all([getBase64(faceFile), getBase64(backFile)]);
-                console.log(faceFile, backFile)
-                Assets.add({ alias: faceFile.name, src: faceUrl })
-                Assets.add({ alias: backFile.name, src: backUrl })
-                await Assets.load<Texture>([faceFile.name, backFile.name]);
-                const card = new Card(Assets.get<Texture>(faceFile.name), Assets.get<Texture>(backFile.name));
+                if (!(Assets.cache.has(faceFile.name) && Assets.cache.has(backFile.name))) {
+                    const [faceUrl, backUrl] = await Promise.all([getBase64(faceFile), getBase64(backFile)]);
+                    console.log(faceFile, backFile)
+                    Assets.add({ alias: faceFile.name, src: faceUrl, data: { label: faceFile.name } })
+                    Assets.add({ alias: backFile.name, src: backUrl, data: { label: backFile.name } })
+                    room?.send({
+                        type: 'sync-resources',
+                        message: [{ alias: faceFile.name, src: faceUrl }, { alias: backFile.name, src: backUrl }]
+                    })
+                    await Assets.load<Texture>([faceFile.name, backFile.name]);
+                }
+                const card = new Card(GetTexture(faceFile.name), GetTexture(backFile.name));
                 gameManager.camera.addChild(card);
             }
         }

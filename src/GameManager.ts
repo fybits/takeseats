@@ -14,6 +14,8 @@ import Stack from './game-objects/Stack';
 import IStackable, { isIStackable } from './game-objects/interfaces/IStackable';
 import rand from './utils/random';
 import { currentID, resetUIDs } from './utils/uniqueID';
+import { GetTexture } from './app';
+import Ping from './effects/Ping';
 
 interface Player {
     position: Vector;
@@ -46,6 +48,9 @@ export default class GameManager {
 
     isHost: boolean;
 
+    peekView: Sprite;
+    peekViewZoom: number = 0.5;
+
     constructor(app: Application, camera: Camera, room: PeerRoom, isHost: boolean) {
         this.app = app;
         this.camera = camera;
@@ -64,12 +69,13 @@ export default class GameManager {
                     break;
                 case 'sync-objects':
                     if (address !== room?.address()) {
+                        console.log('started syncing objects')
                         this.gameObjects.forEach((i) => i.destroy({ children: true }));
                         this.gameObjects.clear();
                         message.gameObjects.sort((a, b) => a.type.localeCompare(b.type))
                         for (let obj of message.gameObjects) {
                             if (obj.type === 'card') {
-                                const card = new Card(Assets.get<Texture>(obj.face), Assets.get<Texture>(obj.back));
+                                const card = new Card(GetTexture(obj.face), GetTexture(obj.back));
                                 card.x = obj.x;
                                 card.y = obj.y;
                                 card.angle = obj.angle;
@@ -98,6 +104,18 @@ export default class GameManager {
                 case 'player-cursor':
                     if (address !== room?.address()) {
                         this.onPlayerCursor(address, message);
+                    }
+                    break;
+                case 'sync-resources':
+                    if (address !== room?.address()) {
+                        console.log('started syncing resources')
+                        message.forEach((asset) => Assets.add(asset));
+                        Assets.load(message.map(ass => ass.alias)).then(() => console.log(Assets.cache))
+                    }
+                    break;
+                case 'ping-point':
+                    if (address !== room?.address()) {
+                        this.camera.addChild(new Ping(GetTexture(message.texture), message.position.x, message.position.y, message.duration, true));
                     }
                     break;
                 case 'move-start-object':
@@ -178,7 +196,7 @@ export default class GameManager {
                 position: data.position,
             };
             this.players.set(address, player);
-            const cursorSprite = new Sprite({ texture: Texture.from('cursor'), width: 24, height: 24, x: player.position.x, y: player.position.y, zIndex: 1000 });
+            const cursorSprite = new Sprite({ anchor: { x: 0.5, y: 0.5 }, texture: Texture.from('cursor'), width: 24, height: 24, x: player.position.x, y: player.position.y, zIndex: 1000 });
             cursorSprite.label = address;
             this.camera.addChild(cursorSprite)
         }
@@ -290,10 +308,20 @@ export default class GameManager {
             this.camera.addChild(new Stack(cards));
         }
 
+        this.peekView = new Sprite();
+        this.peekView.eventMode = 'none';
+        this.peekView.zIndex = 1500;
+        this.peekView.anchor = { x: 1, y: 0.5 };
+        this.app.stage.addChild(this.peekView);
+
         this.app.stage.on('pointerup', this.onDragEnd, this);
         this.app.stage.on('pointerupoutside', this.onDragEnd, this);
         this.app.stage.on('wheel', (event) => {
-            this.camera.desiredZoom = Math.min(Math.max(this.camera.desiredZoom - event.deltaY / 2000, 0.3), 6);
+            if (Controls.instance.keyboard.get('alt') === KeyState.HELD) {
+                this.peekViewZoom = Math.min(Math.max(this.peekViewZoom - event.deltaY / 2000, 0.03), 6);
+            } else {
+                this.camera.desiredZoom = Math.min(Math.max(this.camera.desiredZoom - event.deltaY / 2000, 0.3), 6);
+            }
         })
 
         this.app.stage.eventMode = 'dynamic';
@@ -374,6 +402,29 @@ export default class GameManager {
                 angle -= 1;
             if (Controls.instance.keyboard.get('e') === KeyState.HELD)
                 angle += 1;
+
+            if (Controls.instance.keyboard.get('alt') === KeyState.HELD) {
+                if (this.dragTarget) {
+                    this.peekView.texture = this.dragTarget.currentGraphics.texture;
+                    this.peekView.width = this.dragTarget.currentGraphics.width / this.dragTarget.currentGraphics.height * this.app.screen.height / 2;
+                    this.peekView.height = this.app.screen.height / 2;
+                } else if (this.target) {
+                    this.peekView.texture = this.target.currentGraphics.texture;
+                    this.peekView.width = this.target.currentGraphics.width / this.target.currentGraphics.height * this.app.screen.height / 2;
+                    this.peekView.height = this.app.screen.height / 2;
+                }
+                this.peekView.scale.x = this.peekViewZoom;
+                this.peekView.scale.y = this.peekViewZoom;
+                this.peekView.x = this.app.screen.right - 100;
+                this.peekView.y = this.app.screen.height / 2;
+            } else {
+                this.peekView.texture = null!;
+            }
+
+            if (Controls.instance.keyboard.get('tab') === KeyState.PRESSED) {
+                const mousePos = this.camera.screenToWorldPoint(Controls.instance.mouse.position);
+                this.camera.addChild(new Ping(GetTexture('cursor'), mousePos.x, mousePos.y))
+            }
 
             if (angle !== 0) {
                 if (this.dragTarget) {

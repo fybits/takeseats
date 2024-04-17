@@ -50,7 +50,7 @@ export default class Controls {
     constructor(parent: HTMLElement) {
         this.keyboard = new Map();
         this.mouse = { position: new Vector(0, 0), pressed: false };
-        parent.addEventListener("keydown", (e) => this.keyDown(e));
+        parent.addEventListener("keydown", this.keyDown);
         parent.addEventListener("keyup", this.keyUp);
         parent.addEventListener("mousemove", this.mouseMove);
         parent.addEventListener("mousedown", this.mouseDown);

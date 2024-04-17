@@ -10,7 +10,9 @@ import { SerializedObject } from './GameManager';
 export type DataEventData =
     | { type: 'members-list', message: string[] }
     | { type: 'sync-objects', message: { gameObjects: SerializedObject[], nextUID: number } }
+    | { type: 'sync-resources', message: { alias: string, src: string }[] }
     | { type: 'chat' | 'announce', message: string }
+    | { type: 'ping-point', message: { position: Vector, texture: string, duration: number } }
     | { type: 'player-cursor', message: { position: Vector } }
     | { type: 'move-start-object', message: { target: number } }
     | { type: 'move-object', message: { target: number, position: Vector } }

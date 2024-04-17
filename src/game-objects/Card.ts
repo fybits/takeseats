@@ -18,6 +18,7 @@ export default class Card extends GameObject implements IDraggable, IStackable, 
         super();
         this.face = face;
         this.back = back;
+        this.stack = null;
         this.currentGraphics = new Sprite({ texture: face, width: 200, height: 280 });
         this.currentGraphics.anchor.x = 0.5;
         this.currentGraphics.anchor.y = 0.5;
