@@ -26,6 +26,28 @@ canvas {
         pointer-events: all;
     }
 
+    #toolbar {
+        display: flex;
+
+        button {
+            background-color: #18181821;
+            border: none;
+            color: white;
+            padding: 16px;
+            cursor: pointer;
+            display: block;
+            transition: background-color 0.2s ease-out;
+
+            &:hover {
+                background-color: #1818187a;
+            }
+
+            &:active {
+                background-color: #181818b9;
+            }
+        }
+    }
+
     #lobby-controls {
         position: absolute;
         left: 50%;
