@@ -109,7 +109,18 @@ export default class GameManager {
                 case 'sync-resources':
                     if (address !== room?.address()) {
                         console.log('started syncing resources')
-                        message.forEach((asset) => Assets.add(asset));
+                        message.forEach(async ({ alias, src, spritesheetData }) => {
+                            if (spritesheetData) {
+                                Assets.add({ alias: alias, src: src });
+                                await Assets.load<Texture>([alias]);
+                                const texture = GetTexture(alias);
+                                const spritesheet = new Spritesheet(texture, spritesheetData);
+                                await spritesheet.parse();
+                                Assets.cache.set(`${alias}-sheet`, spritesheet);
+                            } else {
+                                Assets.add({ alias, src })
+                            }
+                        });
                         Assets.load(message.map(ass => ass.alias)).then(() => console.log(Assets.cache))
                     }
                     break;
@@ -296,16 +307,16 @@ export default class GameManager {
 
     async startGame() {
 
-        const spritesheet = Assets.get<Spritesheet>('cards-sheet');
+        // const spritesheet = Assets.get<Spritesheet>('cards-sheet');
 
         if (this.isHost) {
-            const cards: Card[] = [];
+            // const cards: Card[] = [];
 
-            for (let i = 0; i < Object.keys(spritesheet.textures).length - 1; i++) {
-                const card = new Card(spritesheet.textures[`card${i + 1}`], spritesheet.textures[`card20`]);
-                cards.push(card);
-            }
-            this.camera.addChild(new Stack(cards));
+            // for (let i = 0; i < Object.keys(spritesheet.textures).length - 1; i++) {
+            //     const card = new Card(spritesheet.textures[`card${i + 1}`], spritesheet.textures[`card20`]);
+            //     cards.push(card);
+            // }
+            // this.camera.addChild(new Stack(cards));
         }
 
         this.peekView = new Sprite();

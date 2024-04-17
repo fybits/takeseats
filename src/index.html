@@ -26,22 +26,59 @@
                 <button id="join">Join</button>
             </div>
         </div>
-        <form id="card-dialog" hidden>
+        <form id="card-dialog" class="dialog" hidden>
             <input type="button" value="x" class="close" style="float: right"></input>
-            <div>
-                <label>face</label>
+            <h2>Create Card</h2>
+            <div class="field">
+                <label>Face</label>
                 <br>
                 <input type="file" name="face" />
             </div>
-            <div>
-                <label>back</label>
+            <div class="field">
+                <label>Back</label>
                 <br>
                 <input type="file" name="back" />
             </div>
-            <button type="submit" id="create-card">Create</button>
+            <button class="submit" type="submit" id="create-card">Create</button>
+        </form>
+        <form id="deck-dialog" class="dialog" hidden>
+            <input type="button" value="x" class="close" style="float: right"></input>
+            <h2>Create Deck</h2>
+            <div class="field">
+                <label>Spritesheet</label>
+                <br>
+                <input type="file" name="spritesheet" />
+            </div>
+            <div class="field">
+                <label>Number of Columns</label>
+                <br>
+                <input type="number" name="cols" />
+            </div>
+            <div class="field">
+                <label>Number of Rows</label>
+                <br>
+                <input type="number" name="rows" />
+            </div>
+            <div class="field">
+                <label>Back as separate file</label>
+                <br>
+                <input id="back-separate" type="checkbox" name="back-separate" />
+            </div>
+            <div id="back-index" class="field">
+                <label>Back Index</label>
+                <br>
+                <input type="number" name="back-index" />
+            </div>
+            <div id="back-file" class="field" hidden>
+                <label>Back</label>
+                <br>
+                <input type="file" name="back" />
+            </div>
+            <button class="submit" type="submit" id="create-deck">Create</button>
         </form>
         <button hidden id="sync-btn">Sync</button>
         <button hidden id="create-card-btn">Card</button>
+        <button hidden id="create-deck-btn">Deck</button>
     </div>
     <script src="/src/app.ts" type="module" async defer></script>
 </body>

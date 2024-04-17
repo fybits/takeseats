@@ -6,11 +6,12 @@ import { DataConnection, Peer } from 'peerjs'
 import { Vector } from './utils/Vector';
 import GameObject from './game-objects/GameObject';
 import { SerializedObject } from './GameManager';
+import { SpritesheetData } from 'pixi.js';
 
 export type DataEventData =
     | { type: 'members-list', message: string[] }
     | { type: 'sync-objects', message: { gameObjects: SerializedObject[], nextUID: number } }
-    | { type: 'sync-resources', message: { alias: string, src: string }[] }
+    | { type: 'sync-resources', message: { alias: string, spritesheetData?: SpritesheetData, src: string }[] }
     | { type: 'chat' | 'announce', message: string }
     | { type: 'ping-point', message: { position: Vector, texture: string, duration: number } }
     | { type: 'player-cursor', message: { position: Vector } }
@@ -93,8 +94,8 @@ export class PeerRoom {
         this.listeners.push(listener);
     }
 
-    send(arg: DataEventData) {
+    send(arg: DataEventData, chunked?: boolean) {
         this.listeners.forEach(l => l(this.userId, arg))
-        this.members.forEach(m => m.send(arg))
+        this.members.forEach(m => m.send(arg, chunked))
     }
 }

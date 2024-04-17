@@ -35,7 +35,54 @@ canvas {
         transform: translate(-50%, -50%);
     }
 
-    #card-dialog {
+    input.close {
+        border-radius: 50%;
+        width: 2rem;
+        height: 2rem;
+        background-color: transparent;
+        color: white;
+        border-color: transparent;
+        cursor: pointer;
+        text-align: center;
+        vertical-align: middle;
+        font-weight: bold;
+        font-size: 1rem;
+
+        &:hover {
+            border: 2px solid gray !important;
+            background-color: #80808054;
+        }
+    }
+
+    .dialog {
+        h2 {
+            margin-top: 0;
+            border-bottom: 1px solid gray;
+        }
+
+        .field {
+            margin-bottom: 0.2rem;
+        }
+
+        button.submit {
+            margin-top: 1rem;
+            cursor: pointer;
+            background-color: #1c851c;
+            border-color: transparent;
+            border-radius: 4px;
+            padding: 4px 16px;
+            font-size: 1.5rem;
+            color: white;
+
+            &:hover {
+                background-color: #23a523;
+            }
+
+            &:active {
+                background-color: #166816;
+            }
+        }
+
         background-color: #181818;
         border-radius: 10px;
         padding: 20px;
