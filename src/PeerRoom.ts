@@ -5,10 +5,11 @@
 import { DataConnection, Peer } from 'peerjs'
 import { Vector } from './utils/Vector';
 import GameObject from './game-objects/GameObject';
+import { SerializedObject } from './GameManager';
 
 export type DataEventData =
     | { type: 'members-list', message: string[] }
-    | { type: 'sync-objects', message: GameObject[] }
+    | { type: 'sync-objects', message: { gameObjects: SerializedObject[], nextUID: number } }
     | { type: 'chat' | 'announce', message: string }
     | { type: 'player-cursor', message: { position: Vector } }
     | { type: 'move-start-object', message: { target: number } }

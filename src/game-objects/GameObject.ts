@@ -1,4 +1,6 @@
-import { Container, Filter, Sprite, generateUID, uid } from "pixi.js";
+import { Container, DestroyOptions, Filter, Sprite, generateUID, uid } from "pixi.js";
+import uniqueID from "../utils/uniqueID";
+import { SerializedObject } from "../GameManager";
 
 export default class GameObject extends Container {
     id: number;
@@ -8,12 +10,16 @@ export default class GameObject extends Container {
 
     constructor() {
         super();
-        this.id = generateUID()
+        this.id = uniqueID();
 
         this.filters = [];
         this.filtersMap = new Map<string, Filter>();
         gm.gameObjects.set(this.id, this);
+        this.on('destroyed', () => {
+            gm.gameObjects.delete(this.id);
+        })
     }
+
 
     addFilter(key: string, filter: Filter) {
         if (!this.filtersMap.has(key)) {
@@ -26,5 +32,9 @@ export default class GameObject extends Container {
         const filter = this.filtersMap.get(key);
         this.filters = [...this.filters.filter((f) => f !== filter)];
         this.filtersMap.delete(key);
+    }
+
+    serialize(): SerializedObject {
+        throw new Error('member serialize() is abstract and should be implemented in derrived class');
     }
 }

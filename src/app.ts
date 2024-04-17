@@ -37,16 +37,27 @@ let room: PeerRoom | null = null;
     app.stage.addChild(camera);
 
     new Controls(canvas);
+    Assets.add({ alias: "card", src: "assets/card.png" });
+    Assets.add({ alias: "card-face", src: "assets/card-face.png" });
+    Assets.add({ alias: "cursor", src: "assets/cursor.png" });
+    Assets.add({ alias: 'cards-sheet', src: "assets/spritesheet.json" })
+    await Assets.load(['card', 'cursor', 'card-face', 'cards-sheet']);
 
     const connectToLobby = (nickname: string, lobbyKey?: string) => {
         localStorage.setItem('nickname', nickname);
         room = new PeerRoom(`${nickname}_takeseats`);
-        if (lobbyKey) {
+        const isHost = !lobbyKey;
+        if (!isHost) {
             console.log("connect")
             room.connectToMember(`${lobbyKey}_takeseats`);
         }
         lobbyControlsContainer.hidden = true;
-        const gameManager = new GameManager(app, camera, room);
+        const gameManager = new GameManager(app, camera, room, isHost);
+        if (isHost) {
+            const syncBtn = document.querySelector<HTMLButtonElement>("#sync-btn")!;
+            syncBtn.hidden = false;
+            syncBtn.addEventListener('click', () => gameManager.sync())
+        }
         globalThis.gm = gameManager;
 
         gameManager.startGame();

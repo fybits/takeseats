@@ -6,11 +6,13 @@ import { DropShadowFilter, OutlineFilter } from "pixi-filters";
 import IFlipable, { isIFlipable } from "./interfaces/IFlipable";
 import IRollable from "./interfaces/IRollable";
 import Controls, { KeyState } from "../Controls";
+import { SerializedObject } from "../GameManager";
 
 export default class Stack extends GameObject implements IDraggable, IStackable, IFlipable, IRollable {
     items: (GameObject & IStackable)[];
     mmask: Graphics;
     stack: (GameObject & IStackable) | null;
+    isFlipped: boolean;
 
     constructor(items: (GameObject & IStackable)[]) {
         super();
@@ -100,7 +102,6 @@ export default class Stack extends GameObject implements IDraggable, IStackable,
         this.items.splice(itemIndex, 1);
         this.updateGraphics();
         item.stack = null;
-        // console.log()
         item.x = this.x;
         item.y = this.y;
         item.angle = this.angle;
@@ -154,6 +155,19 @@ export default class Stack extends GameObject implements IDraggable, IStackable,
         this.items.push(...newItems);
         this.updateGraphics();
         item.removeFromParent();
+        if (item instanceof Stack) {
+            item.destroy();
+        }
     }
 
+    serialize(): SerializedObject {
+        return {
+            type: 'stack',
+            id: this.id,
+            x: this.x,
+            y: this.y,
+            angle: this.angle,
+            items: this.items.map(i => i.id),
+        }
+    }
 }

@@ -1,4 +1,4 @@
-import { Application, Assets, Texture, Sprite, Container, FederatedPointerEvent, Spritesheet, } from 'pixi.js';
+import { Application, Assets, Texture, Sprite, Container, FederatedPointerEvent, Spritesheet, SubtractBlend } from 'pixi.js';
 import { DropShadowFilter } from "pixi-filters"
 import Camera from './game-objects/Camera';
 import { DataEventData, PeerRoom } from './PeerRoom';
@@ -11,12 +11,29 @@ import GameObject from './game-objects/GameObject';
 import { isIFlipable } from './game-objects/interfaces/IFlipable';
 import { isIRollable } from './game-objects/interfaces/IRollable';
 import Stack from './game-objects/Stack';
-import { isIStackable } from './game-objects/interfaces/IStackable';
+import IStackable, { isIStackable } from './game-objects/interfaces/IStackable';
 import rand from './utils/random';
+import { currentID, resetUIDs } from './utils/uniqueID';
 
 interface Player {
     position: Vector;
 }
+
+export type SerializedObject = {
+    id: number;
+    x: number;
+    y: number;
+    angle: number;
+} & ({
+    type: 'card';
+    face: string;
+    back: string;
+    isFlipped: boolean;
+    inStack: boolean;
+} | {
+    type: 'stack';
+    items: number[],
+})
 
 export default class GameManager {
     app: Application;
@@ -27,15 +44,57 @@ export default class GameManager {
 
     players: Map<string, Player>;
 
-    constructor(app: Application, camera: Camera, room: PeerRoom) {
+    isHost: boolean;
+
+    constructor(app: Application, camera: Camera, room: PeerRoom, isHost: boolean) {
         this.app = app;
         this.camera = camera;
         this.room = room;
         this.players = new Map<string, Player>();
         this.gameObjects = new Map<number, GameObject>();
+        this.isHost = isHost;
 
         room.on("message", (address, { type, message }) => {
             switch (type) {
+                case 'announce':
+                    if (address !== room?.address()) {
+                        console.log(address, 'connected!')
+                        if (isHost) this.sync();
+                    }
+                    break;
+                case 'sync-objects':
+                    if (address !== room?.address()) {
+                        this.gameObjects.forEach((i) => i.destroy({ children: true }));
+                        this.gameObjects.clear();
+                        message.gameObjects.sort((a, b) => a.type.localeCompare(b.type))
+                        for (let obj of message.gameObjects) {
+                            if (obj.type === 'card') {
+                                const card = new Card(Assets.get<Texture>(obj.face), Assets.get<Texture>(obj.back));
+                                card.x = obj.x;
+                                card.y = obj.y;
+                                card.angle = obj.angle;
+                                this.gameObjects.delete(card.id);
+                                card.id = obj.id;
+                                this.gameObjects.set(card.id, card);
+                                if (obj.isFlipped) card.flip();
+                                if (!obj.inStack) this.camera.addChild(card);
+                            }
+                            if (obj.type === 'stack') {
+                                const cards = obj.items.map((i) => this.gameObjects.get(i)) as (GameObject & IStackable)[];
+                                const stack = new Stack(cards);
+                                stack.x = obj.x;
+                                stack.y = obj.y;
+                                stack.angle = obj.angle;
+                                this.gameObjects.delete(stack.id);
+                                stack.id = obj.id;
+                                this.gameObjects.set(stack.id, stack);
+                                stack.id = obj.id;
+                                this.camera.addChild(stack);
+                            }
+                        }
+                        resetUIDs(message.nextUID);
+                    }
+                    break;
                 case 'player-cursor':
                     if (address !== room?.address()) {
                         this.onPlayerCursor(address, message);
@@ -101,6 +160,13 @@ export default class GameManager {
         });
     };
 
+    sync() {
+        const objectSerialized: SerializedObject[] = [];
+        for (let obj of this.gameObjects.values()) {
+            objectSerialized.push(obj.serialize());
+        }
+        this.room.send({ type: 'sync-objects', message: { gameObjects: objectSerialized, nextUID: currentID } })
+    }
 
     onPlayerCursor(address: string, data: Extract<DataEventData, { type: 'player-cursor' }>["message"]) {
         if (this.players.has(address)) {
@@ -137,7 +203,6 @@ export default class GameManager {
         const object = this.gameObjects.get(data.object_from_stack);
         if (isIStackable(object)) {
             const target = object.stack;
-            console.log(target)
             if (target && isIStackable(target)) {
                 const item = target.onTakeFromStack(object);
                 if (item)
@@ -178,13 +243,6 @@ export default class GameManager {
 
     onDragMove(event: FederatedPointerEvent) {
         if (this.dragTarget) {
-            this.dragTarget.onDrag()
-            this.room.send({
-                type: 'move-object', message: {
-                    target: this.dragTarget.id,
-                    position: new Vector(this.dragTarget.x, this.dragTarget.y),
-                }
-            })
             if (this.dragTarget.parent) {
                 const center = this.camera.screenToWorldPoint(new Vector(event.screen.x, event.screen.y));
                 this.dragTarget.x = center.x;
@@ -192,13 +250,22 @@ export default class GameManager {
             } else {
                 this.onDragEnd();
             }
+            this.dragTarget.onDrag()
+            this.room.send({
+                type: 'move-object', message: {
+                    target: this.dragTarget.id,
+                    position: new Vector(this.dragTarget.x, this.dragTarget.y),
+                }
+            })
         }
     }
 
     onDragEnd() {
         if (this.dragTarget) {
-            this.dragTarget.onDragEnd();
-            this.onMoveEnd(this.dragTarget);
+            if (!this.dragTarget.destroyed) {
+                this.dragTarget.onDragEnd();
+                this.onMoveEnd(this.dragTarget);
+            }
             this.room.send({
                 type: 'move-end-object', message: {
                     target: this.dragTarget.id,
@@ -209,28 +276,19 @@ export default class GameManager {
         }
     }
 
-    createCard(label: string): Container {
-        const card = new Card(Texture.from("card-face"), Texture.from("card"), label);
-
-        return card;
-    }
-
     async startGame() {
-        Assets.add({ alias: "card", src: "assets/card.png" });
-        Assets.add({ alias: "card-face", src: "assets/card-face.png" });
-        Assets.add({ alias: "cursor", src: "assets/cursor.png" });
-        Assets.add({ alias: 'cards-sheet', src: "assets/spritesheet.json" })
-        await Assets.load(['card', 'cursor', 'card-face', 'cards-sheet']);
 
         const spritesheet = Assets.get<Spritesheet>('cards-sheet');
 
-        const cards: Card[] = [];
+        if (this.isHost) {
+            const cards: Card[] = [];
 
-        for (let i = 0; i < Object.keys(spritesheet.textures).length - 1; i++) {
-            const card = new Card(spritesheet.textures[`card${i + 1}`], spritesheet.textures[`card20`], `Card${i + 1}`);
-            cards.push(card);
+            for (let i = 0; i < Object.keys(spritesheet.textures).length - 1; i++) {
+                const card = new Card(spritesheet.textures[`card${i + 1}`], spritesheet.textures[`card20`]);
+                cards.push(card);
+            }
+            this.camera.addChild(new Stack(cards));
         }
-        this.camera.addChild(new Stack(cards));
 
         this.app.stage.on('pointerup', this.onDragEnd, this);
         this.app.stage.on('pointerupoutside', this.onDragEnd, this);
@@ -265,11 +323,6 @@ export default class GameManager {
             if (Controls.instance.keyboard.get('d') === KeyState.HELD)
                 input.x += 1;
 
-            let angle = 0
-            if (Controls.instance.keyboard.get('q') === KeyState.HELD)
-                angle -= 1;
-            if (Controls.instance.keyboard.get('e') === KeyState.HELD)
-                angle += 1;
 
             if (Controls.instance.keyboard.get('f') === KeyState.PRESSED) {
                 if (this.dragTarget && isIFlipable(this.dragTarget)) {
@@ -316,24 +369,32 @@ export default class GameManager {
                 }
             }
 
-            if (this.dragTarget) {
-                this.dragTarget.angle += angle;
-                this.room.send({
-                    type: 'rotate-object',
-                    message: {
-                        target: this.dragTarget.id,
-                        angle: this.dragTarget.angle,
-                    }
-                });
-            } else if (this.target) {
-                this.target.angle += angle;
-                this.room.send({
-                    type: 'rotate-object',
-                    message: {
-                        target: this.target.id,
-                        angle: this.target.angle,
-                    }
-                });
+            let angle = 0
+            if (Controls.instance.keyboard.get('q') === KeyState.HELD)
+                angle -= 1;
+            if (Controls.instance.keyboard.get('e') === KeyState.HELD)
+                angle += 1;
+
+            if (angle !== 0) {
+                if (this.dragTarget) {
+                    this.dragTarget.angle += angle * ticker.deltaTime * 2;
+                    this.room.send({
+                        type: 'rotate-object',
+                        message: {
+                            target: this.dragTarget.id,
+                            angle: this.dragTarget.angle,
+                        }
+                    });
+                } else if (this.target) {
+                    this.target.angle += angle * ticker.deltaTime * 2;
+                    this.room.send({
+                        type: 'rotate-object',
+                        message: {
+                            target: this.target.id,
+                            angle: this.target.angle,
+                        }
+                    });
+                }
             }
             this.room.send({
                 type: 'player-cursor', message: {

@@ -1,4 +1,5 @@
 export default interface IFlipable {
+    isFlipped: boolean;
     flip(): void;
 }
 

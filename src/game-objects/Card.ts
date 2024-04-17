@@ -5,18 +5,19 @@ import IStackable, { isIStackable } from "./interfaces/IStackable";
 import Stack from "./Stack";
 import GameObject from "./GameObject";
 import IFlipable from "./interfaces/IFlipable";
+import { SerializedObject } from "../GameManager";
 
 export default class Card extends GameObject implements IDraggable, IStackable, IFlipable {
     face: Texture;
     back: Texture;
     currentGraphics: Sprite;
     stack: (GameObject & IStackable) | null;
+    isFlipped: boolean;
 
-    constructor(face: Texture, back: Texture, label: string) {
+    constructor(face: Texture, back: Texture) {
         super();
         this.face = face;
         this.back = back;
-        this.label = label;
         this.currentGraphics = new Sprite({ texture: face, width: 200, height: 280 });
         this.currentGraphics.anchor.x = 0.5;
         this.currentGraphics.anchor.y = 0.5;
@@ -48,7 +49,6 @@ export default class Card extends GameObject implements IDraggable, IStackable, 
             this.removeFilter('outline');
             gm.target = null;
         });
-        console.log(this.id)
     }
     onTakeFromStack(): GameObject | null {
         throw new Error("Method not implemented.");
@@ -57,8 +57,10 @@ export default class Card extends GameObject implements IDraggable, IStackable, 
     flip(): void {
         if (this.currentGraphics.texture === this.face) {
             this.currentGraphics.texture = this.back;
+            this.isFlipped = true;
         } else {
             this.currentGraphics.texture = this.face;
+            this.isFlipped = false;
         }
     }
 
@@ -71,6 +73,9 @@ export default class Card extends GameObject implements IDraggable, IStackable, 
         const parent = this.parent;
         this.removeFromParent();
         item.removeFromParent();
+        if (item instanceof Stack) {
+            item.destroy();
+        }
         parent.addChild(stack);
         stack.x = this.x;
         stack.y = this.y;
@@ -85,5 +90,19 @@ export default class Card extends GameObject implements IDraggable, IStackable, 
     }
 
     onDragEnd(): void {
+    }
+
+    serialize(): SerializedObject {
+        return {
+            type: 'card',
+            id: this.id,
+            face: this.face.label!,
+            back: this.back.label!,
+            isFlipped: this.isFlipped,
+            x: this.x,
+            y: this.y,
+            angle: this.angle,
+            inStack: this.stack !== null,
+        }
     }
 }
