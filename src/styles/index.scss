@@ -34,4 +34,16 @@ canvas {
         width: 250px;
         transform: translate(-50%, -50%);
     }
+
+    #card-dialog {
+        background-color: #181818;
+        border-radius: 10px;
+        padding: 20px;
+        position: absolute;
+        left: 50%;
+        top: 50%;
+        margin: auto;
+        width: 250px;
+        transform: translate(-50%, -50%);
+    }
 }

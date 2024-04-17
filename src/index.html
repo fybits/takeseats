@@ -26,7 +26,22 @@
                 <button id="join">Join</button>
             </div>
         </div>
+        <form id="card-dialog" hidden>
+            <input type="button" value="x" class="close" style="float: right"></input>
+            <div>
+                <label>face</label>
+                <br>
+                <input type="file" name="face" />
+            </div>
+            <div>
+                <label>back</label>
+                <br>
+                <input type="file" name="back" />
+            </div>
+            <button type="submit" id="create-card">Create</button>
+        </form>
         <button hidden id="sync-btn">Sync</button>
+        <button hidden id="create-card-btn">Card</button>
     </div>
     <script src="/src/app.ts" type="module" async defer></script>
 </body>
