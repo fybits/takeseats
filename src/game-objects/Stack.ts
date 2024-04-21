@@ -7,6 +7,7 @@ import IFlipable, { isIFlipable } from "./interfaces/IFlipable";
 import IRollable from "./interfaces/IRollable";
 import Controls, { KeyState } from "../Controls";
 import { SerializedObject } from "../GameManager";
+import { GetTexture } from "../app";
 
 export default class Stack extends GameObject implements IDraggable, IStackable, IFlipable, IRollable {
     items: (GameObject & IStackable)[];
@@ -169,5 +170,11 @@ export default class Stack extends GameObject implements IDraggable, IStackable,
             angle: this.angle,
             items: this.items.map(i => i.id),
         }
+    }
+
+    reloadTextures() {
+        this.currentGraphics.texture = GetTexture(this.currentGraphics.texture.label!);
+        this.currentGraphics.width = this.items[this.items.length - 1].width;
+        this.currentGraphics.height = this.items[this.items.length - 1].height;
     }
 }

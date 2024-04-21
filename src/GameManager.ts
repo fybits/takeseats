@@ -106,9 +106,32 @@ export default class GameManager {
                         this.onPlayerCursor(address, message);
                     }
                     break;
+                case 'request-resource':
+                    if (address !== room?.address()) {
+                        room.send({
+                            type: 'sync-resources',
+                            message: message.map((item): Extract<DataEventData, { type: 'sync-resources' }>['message'][0] => {
+                                const spritesheetMatch = item.alias.match(/(.+)-sheet$/);
+                                if (spritesheetMatch) {
+                                    const spritesheet = Assets.get<Spritesheet>(item.alias);
+                                    return {
+                                        alias: spritesheetMatch[1],
+                                        spritesheetData: spritesheet.data,
+                                        src: spritesheet.textureSource.label,
+                                    }
+                                }
+                                return {
+                                    alias: item.alias,
+                                    src: GetTexture(item.alias).source.label,
+                                }
+                            })
+                        })
+                    }
+                    break;
                 case 'sync-resources':
                     if (address !== room?.address()) {
                         console.log('started syncing resources')
+                        console.log(message)
                         message.forEach(async ({ alias, src, spritesheetData }) => {
                             if (spritesheetData) {
                                 Assets.add({ alias: alias, src: src });
@@ -121,7 +144,7 @@ export default class GameManager {
                                 Assets.add({ alias, src })
                             }
                         });
-                        Assets.load(message.map(ass => ass.alias)).then(() => console.log(Assets.cache))
+                        Assets.load(message.map(ass => ass.alias)).then(() => { console.log(Assets.cache); this.gameObjects.forEach((go) => go.reloadTextures()) })
                     }
                     break;
                 case 'ping-point':

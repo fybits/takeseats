@@ -6,6 +6,7 @@ import Stack from "./Stack";
 import GameObject from "./GameObject";
 import IFlipable from "./interfaces/IFlipable";
 import { SerializedObject } from "../GameManager";
+import { GetTexture } from "../app";
 
 export default class Card extends GameObject implements IDraggable, IStackable, IFlipable {
     face: Texture;
@@ -63,6 +64,8 @@ export default class Card extends GameObject implements IDraggable, IStackable, 
             this.currentGraphics.texture = this.face;
             this.isFlipped = false;
         }
+        this.currentGraphics.width = 200;
+        this.currentGraphics.height = 280;
     }
 
     getItems(): (GameObject & IStackable)[] {
@@ -105,5 +108,13 @@ export default class Card extends GameObject implements IDraggable, IStackable, 
             angle: this.angle,
             inStack: this.stack !== null,
         }
+    }
+
+    reloadTextures() {
+        this.face = GetTexture(this.face.label!);
+        this.back = GetTexture(this.back.label!);
+        this.currentGraphics.texture = GetTexture(this.currentGraphics.texture.label!);
+        this.currentGraphics.width = 200;
+        this.currentGraphics.height = 280;
     }
 }

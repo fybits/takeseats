@@ -2,7 +2,7 @@ import { Container, DestroyOptions, Filter, Sprite, generateUID, uid } from "pix
 import uniqueID from "../utils/uniqueID";
 import { SerializedObject } from "../GameManager";
 
-export default class GameObject extends Container {
+export default abstract class GameObject extends Container {
     id: number;
     currentGraphics: Sprite;
     filters: Filter[];
@@ -21,6 +21,7 @@ export default class GameObject extends Container {
     }
 
 
+
     addFilter(key: string, filter: Filter) {
         filter.antialias = 'on';
         if (!this.filtersMap.has(key)) {
@@ -35,7 +36,7 @@ export default class GameObject extends Container {
         this.filtersMap.delete(key);
     }
 
-    serialize(): SerializedObject {
-        throw new Error('member serialize() is abstract and should be implemented in derrived class');
-    }
+    abstract serialize(): SerializedObject;
+
+    abstract reloadTextures();
 }
