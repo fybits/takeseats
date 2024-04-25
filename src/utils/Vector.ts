@@ -8,6 +8,14 @@ export class Vector {
         this.y = y;
     }
 
+    rotate(angleRadians: number) {
+        const newX = Math.cos(angleRadians) * this.x - Math.sin(angleRadians) * this.y;
+        const newY = Math.sin(angleRadians) * this.x + Math.cos(angleRadians) * this.y;
+        this.x = newX;
+        this.y = newY;
+        return this;
+    }
+
     get length() {
         return Math.sqrt(this.x * this.x + this.y * this.y);
     }

@@ -23,7 +23,7 @@ export type DataEventData =
     | { type: 'roll-object', message: { target: number, seed: number } }
     | { type: 'flip-object', message: { target: number } }
     | { type: 'stack-object', message: { target: number, object_to_stack: number } }
-    | { type: 'take-object-from-stack', message: { target: number, object_from_stack: number } }
+    | { type: 'take-object-from-stack', message: { target: number, object_from_stack: number, point: Vector } }
     | { type: 'player-disconnected', message: null }
 
 export class PeerRoom {
@@ -34,7 +34,7 @@ export class PeerRoom {
     private listeners: ((address: string, data: DataEventData) => void)[] = []
 
     constructor(private userId: string) {
-        this.peer = new Peer(userId, { host: 'localhost', port: 9000, path: '/takeseats' });
+        this.peer = new Peer(userId, { host: '147.45.136.216', port: 9000, path: '/takeseats' });
         this.peer.on('error', (err) => { console.error(`${err.name}: ${err.message} [${err.type}]`) })
         this.peer.on('connection', (member) => this.addDataConnectionEventHandlers(member));
         window.addEventListener('beforeunload', this.unloadListener)

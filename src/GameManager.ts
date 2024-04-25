@@ -1,5 +1,5 @@
-import { Application, Assets, Texture, Sprite, Container, FederatedPointerEvent, Spritesheet, SubtractBlend } from 'pixi.js';
-import { DropShadowFilter } from "pixi-filters"
+import { Application, Assets, Texture, Sprite, Container, FederatedPointerEvent, Spritesheet, SubtractBlend, GlRenderTargetAdaptor, Rectangle } from 'pixi.js';
+import { DropShadowFilter, OutlineFilter } from "pixi-filters"
 import Camera from './game-objects/Camera';
 import { DataEventData, PeerRoom } from './PeerRoom';
 import { isIUpdatable } from './game-objects/interfaces/IUpdatable';
@@ -16,6 +16,7 @@ import rand from './utils/random';
 import { currentID, resetUIDs } from './utils/uniqueID';
 import { GetTexture } from './app';
 import Ping from './effects/Ping';
+import Hand from './game-objects/Hand';
 
 interface Player {
     position: Vector;
@@ -50,6 +51,7 @@ export default class GameManager {
 
     peekView: Sprite;
     peekViewZoom: number = 0.5;
+    hands: Hand[];
 
     constructor(app: Application, camera: Camera, room: PeerRoom, isHost: boolean) {
         this.app = app;
@@ -78,6 +80,8 @@ export default class GameManager {
                                 const card = new Card(GetTexture(obj.face), GetTexture(obj.back));
                                 card.x = obj.x;
                                 card.y = obj.y;
+                                card.desiredPosition.x = obj.x;
+                                card.desiredPosition.y = obj.y;
                                 card.angle = obj.angle;
                                 this.gameObjects.delete(card.id);
                                 card.id = obj.id;
@@ -90,6 +94,8 @@ export default class GameManager {
                                 const stack = new Stack(cards);
                                 stack.x = obj.x;
                                 stack.y = obj.y;
+                                stack.desiredPosition.x = obj.x;
+                                stack.desiredPosition.y = obj.y;
                                 stack.angle = obj.angle;
                                 this.gameObjects.delete(stack.id);
                                 stack.id = obj.id;
@@ -239,7 +245,7 @@ export default class GameManager {
     onObjectMove(address: string, data: Extract<DataEventData, { type: 'move-object' }>["message"]) {
         const item = this.gameObjects.get(data.target);
         if (item) {
-            item.position = data.position;
+            item.desiredPosition = data.position;
         }
     }
 
@@ -256,7 +262,7 @@ export default class GameManager {
         if (isIStackable(object)) {
             const target = object.stack;
             if (target && isIStackable(target)) {
-                const item = target.onTakeFromStack(object);
+                const item = target.onTakeFromStack(object, data.point);
                 if (item)
                     this.onMoveStart(item);
             }
@@ -268,6 +274,16 @@ export default class GameManager {
     target: GameObject | null;
 
     onMoveStart(target: GameObject) {
+        if (target.parent !== this.camera) {
+            this.camera.addChild(target);
+            const mousePos = Controls.instance.mouse.position;
+            const center = this.camera.screenToWorldPoint(new Vector(mousePos.x, mousePos.y));
+            target.x = center.x;
+            target.y = center.y;
+        }
+        if (target instanceof Card) {
+            target.canStack = true;
+        }
         target.eventMode = 'none';
         target.zIndex = 100;
         if (!target.parent) {
@@ -284,6 +300,23 @@ export default class GameManager {
 
     onDragStart(item: GameObject & IDraggable) {
         this.dragTarget = item;
+        console.log('drag start')
+        if (this.dragTarget.parent.label === 'hand_container' && isIStackable(this.dragTarget)) {
+            this.dragTarget.canStack = false;
+            const mousePos = Controls.instance.mouse.position;
+            const center = this.camera.screenToWorldPoint(new Vector(mousePos.x, mousePos.y));
+            this.dragTarget.x = center.x;
+            this.dragTarget.y = center.y;
+            this.dragTarget.desiredPosition.x = center.x;
+            this.dragTarget.desiredPosition.y = center.y;
+            this.dragTarget.angle += this.dragTarget.parent.parent.angle;
+            this.camera.addChild(this.dragTarget);
+            // this.app.stage.addChild(this.dragTarget);
+            // this.dragTarget.x = Controls.instance.mouse.position.x;
+            // this.dragTarget.y = Controls.instance.mouse.position.y;
+            // this.dragTarget.desiredPosition.x = Controls.instance.mouse.position.x;
+            // this.dragTarget.desiredPosition.y = Controls.instance.mouse.position.y;
+        }
         this.onMoveStart(item)
         this.room.send({
             type: 'move-start-object', message: {
@@ -297,8 +330,8 @@ export default class GameManager {
         if (this.dragTarget) {
             if (this.dragTarget.parent) {
                 const center = this.camera.screenToWorldPoint(new Vector(event.screen.x, event.screen.y));
-                this.dragTarget.x = center.x;
-                this.dragTarget.y = center.y;
+                this.dragTarget.desiredPosition.x = center.x;
+                this.dragTarget.desiredPosition.y = center.y;
             } else {
                 this.onDragEnd();
             }
@@ -330,17 +363,94 @@ export default class GameManager {
 
     async startGame() {
 
-        // const spritesheet = Assets.get<Spritesheet>('cards-sheet');
+        const spritesheet = Assets.get<Spritesheet>('cards-sheet');
 
         if (this.isHost) {
-            // const cards: Card[] = [];
+            const cards: Card[] = [];
 
-            // for (let i = 0; i < Object.keys(spritesheet.textures).length - 1; i++) {
-            //     const card = new Card(spritesheet.textures[`card${i + 1}`], spritesheet.textures[`card20`]);
-            //     cards.push(card);
-            // }
-            // this.camera.addChild(new Stack(cards));
+            for (let i = 0; i < Object.keys(spritesheet.textures).length - 1; i++) {
+                const card = new Card(spritesheet.textures[`card${i + 1}`], spritesheet.textures[`card32`]);
+                cards.push(card);
+            }
+            this.camera.addChild(new Stack(cards));
         }
+        // this.hand = new Container({ cursor: "grab" });
+        // this.hand.filters = [new DropShadowFilter({ blur: 16, offset: { x: 8, y: 40 }, pixelSize: { x: 1, y: 1 }, quality: 100 })];
+        // this.hand.width = this.app.screen.width / 2;
+        // this.hand.height = 100;
+        // this.hand.pivot.x = this.app.screen.width / 4;
+        // this.hand.pivot.y = 100;
+        // this.hand.eventMode = 'static';
+        // this.hand.x = this.app.screen.width / 2;
+        // this.hand.y = this.app.screen.height + 100;
+        // this.hand.zIndex = 0;
+        // this.hand.on('pointerup', () => {
+        //     if (this.dragTarget && this.dragTarget instanceof Card) {
+        //         this.dragTarget.canStack = false;
+        //         this.hand.addChild(this.dragTarget);
+        //         // this.dragTarget.desiredPosition.x = 0;
+        //         this.dragTarget.desiredPosition.y = 0;
+        //         this.dragTarget.y = 0;
+        //     }
+        // });
+        // this.hand.on('pointerover', () => {
+        //     this.hand.y = this.app.screen.height - 10;
+        //     if (this.dragTarget && this.dragTarget instanceof Card) {
+        //         this.dragTarget.canStack = false;
+        //         this.app.stage.addChild(this.dragTarget);
+        //         this.dragTarget.x = Controls.instance.mouse.position.x;
+        //         this.dragTarget.y = Controls.instance.mouse.position.y;
+        //     }
+        // });
+        // this.hand.on('pointerout', () => {
+        //     this.hand.y = this.app.screen.height + 100;
+        //     if (this.dragTarget && this.dragTarget instanceof Card) {
+        //         this.dragTarget.canStack = true;
+        //         this.camera.addChild(this.dragTarget);
+        //         // const mousePos = this.camera.screenToWorldPoint(Controls.instance.mouse.position);
+        //         // this.dragTarget.x = mousePos.x;
+        //         // this.dragTarget.y = mousePos.y;
+        //     }
+        // });
+        // this.app.stage.addChild(this.hand);
+
+        // 1000 1000 0
+        //     - 1000 1000 0
+
+        // 1000 - 1000 90
+        // 1000 1000 90
+
+        //     - 1000 - 1000 180
+        // 1000 - 1000 180
+
+        //     - 1000 1000 270
+        //         - 1000 - 1000 270
+        this.hands = [];
+        let hand = new Hand(1000, 1000, 1200, 400);
+        this.hands.push(hand);
+
+        hand = new Hand(-1000, 1000, 1200, 400);
+        this.hands.push(hand);
+
+        hand = new Hand(-1800, 0, 1200, 400);
+        hand.angle = 90;
+        this.hands.push(hand);
+
+        hand = new Hand(-1000, -1000, 1200, 400);
+        hand.angle = 180;
+        this.hands.push(hand);
+
+        hand = new Hand(1000, -1000, 1200, 400);
+        hand.angle = 180;
+        this.hands.push(hand);
+
+        hand = new Hand(1800, 0, 1200, 400);
+        hand.angle = 270;
+        this.hands.push(hand);
+
+        this.hands.forEach(hand => {
+            this.camera.addChild(hand);
+        });
 
         this.peekView = new Sprite();
         this.peekView.eventMode = 'none';
@@ -354,7 +464,7 @@ export default class GameManager {
             if (Controls.instance.keyboard.get('alt') === KeyState.HELD) {
                 this.peekViewZoom = Math.min(Math.max(this.peekViewZoom - event.deltaY / 2000, 0.03), 6);
             } else {
-                this.camera.desiredZoom = Math.min(Math.max(this.camera.desiredZoom - event.deltaY / 2000, 0.3), 6);
+                this.camera.desiredZoom = Math.min(Math.max(this.camera.desiredZoom - event.deltaY / 2000, 0.2), 6);
             }
         })
 
@@ -364,7 +474,13 @@ export default class GameManager {
         const center = new Vector(this.app.screen.width / 2, this.app.screen.height / 2);
         this.camera.position.x = center.x
         this.camera.position.y = center.y
+
         this.app.ticker.add((ticker) => {
+            for (const child of this.app.stage.children) {
+                if (isIUpdatable(child)) {
+                    child.update(ticker.deltaTime);
+                }
+            }
             for (const child of this.camera.children) {
                 if (child.label && this.players.has(child.label)) {
                     const player = this.players.get(child.label)!;
@@ -462,9 +578,17 @@ export default class GameManager {
                 this.camera.addChild(new Ping(GetTexture('cursor'), mousePos.x, mousePos.y))
             }
 
+            // if (Controls.instance.keyboard.get('1') === KeyState.PRESSED) {
+            //     if (this.target && this.target instanceof Card) {
+            //         this.target.canStack = false;
+            //         this.hand.addChild(this.target);
+            //         this.target.desiredPosition.y = 0;
+            //     }
+            // }
+
             if (angle !== 0) {
                 if (Controls.instance.keyboard.get('shift') === KeyState.HELD) {
-                    this.camera.angle += angle * ticker.deltaTime;
+                    this.camera.angle -= angle * ticker.deltaTime;
                 } else {
                     if (this.dragTarget) {
                         this.dragTarget.angle += angle * ticker.deltaTime * 2;
@@ -493,8 +617,9 @@ export default class GameManager {
                 }
             })
 
-            this.camera.desiredPosition.x += input.x * ticker.deltaTime * 10;
-            this.camera.desiredPosition.y += input.y * ticker.deltaTime * 10;
+            input.rotate(-this.camera.rotation);
+            this.camera.desiredPosition.x += input.x * ticker.deltaTime * 20;
+            this.camera.desiredPosition.y += input.y * ticker.deltaTime * 20;
             this.camera.update(ticker.deltaTime);
         })
     }

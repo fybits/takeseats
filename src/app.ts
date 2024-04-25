@@ -88,14 +88,15 @@ export const GetTexture = (key: string) => {
     Assets.add({ alias: "card", src: "assets/card.png" });
     Assets.add({ alias: "card-face", src: "assets/card-face.png" });
     Assets.add({ alias: "cursor", src: "assets/cursor.png" });
-    await Assets.load(['card', 'cursor', 'card-face']);
+    Assets.add({ alias: 'cards-sheet', src: "assets/spritesheet.json" })
+    await Assets.load(['card', 'cursor', 'card-face', 'cards-sheet']);
     const connectToLobby = (nickname: string, lobbyKey?: string) => {
         localStorage.setItem('nickname', nickname);
-        room = new PeerRoom(`${nickname}_takeseats`);
+        room = new PeerRoom(nickname);
         const isHost = !lobbyKey;
         if (!isHost) {
             console.log("connect")
-            room.connectToMember(`${lobbyKey}_takeseats`);
+            room.connectToMember(lobbyKey);
         }
         lobbyControlsContainer.hidden = true;
         const gameManager = new GameManager(app, camera, room, isHost);
@@ -167,7 +168,7 @@ export const GetTexture = (key: string) => {
 
                 for (let j = 0; j < rows; j++) {
                     for (let i = 0; i < cols; i++) {
-                        frames[`${spritesheetFile.name}-${j * rows + i + 1}`] = {
+                        frames[`${spritesheetFile.name}-${j * cols + i + 1}`] = {
                             frame: { x: width / cols * i, y: height / rows * j, w: width / cols, h: height / rows },
                             sourceSize: { w: width / cols, h: height / rows },
                             spriteSourceSize: { x: 0, y: 0, w: width / cols, h: height / rows }
@@ -202,6 +203,7 @@ export const GetTexture = (key: string) => {
 
             const spritesheet = Assets.get<Spritesheet>(`${spritesheetFile.name}-sheet`);
             const backTexture = isBackSeparate ? GetTexture(backFile.name) : spritesheet.textures[`${spritesheetFile.name}-${backIndex}`];
+            console.log(backTexture)
             const cards: Card[] = [];
 
             for (let i = 0; i < Object.keys(spritesheet.textures).length - 1 + +isBackSeparate; i++) {

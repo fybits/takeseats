@@ -28,6 +28,7 @@ canvas {
 
     #toolbar {
         display: flex;
+        user-select: none;
 
         button {
             background-color: #18181821;

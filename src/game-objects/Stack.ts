@@ -8,12 +8,14 @@ import IRollable from "./interfaces/IRollable";
 import Controls, { KeyState } from "../Controls";
 import { SerializedObject } from "../GameManager";
 import { GetTexture } from "../app";
+import { Vector } from "../utils/Vector";
 
 export default class Stack extends GameObject implements IDraggable, IStackable, IFlipable, IRollable {
     items: (GameObject & IStackable)[];
     mmask: Graphics;
     stack: (GameObject & IStackable) | null;
     isFlipped: boolean;
+    canStack: boolean;
 
     constructor(items: (GameObject & IStackable)[]) {
         super();
@@ -21,6 +23,7 @@ export default class Stack extends GameObject implements IDraggable, IStackable,
         this.items.forEach((i) => i.stack = this);
         this.eventMode = 'dynamic';
         this.addFilter('deck-details', new DropShadowFilter({ offset: { x: 0, y: this.items.length * 2 * gm.camera.scale.x }, color: 0xcccccc, blur: 0, alpha: 1 }));
+        this.canStack = true;
 
         this.on('pointerdown', () => {
             this.onDragStart();
@@ -98,13 +101,15 @@ export default class Stack extends GameObject implements IDraggable, IStackable,
         }
     }
 
-    onTakeFromStack(item: GameObject & IStackable): GameObject | null {
+    onTakeFromStack(item: GameObject & IStackable, point: Vector): GameObject | null {
         const itemIndex = this.items.findIndex((i) => i.id === item.id);
         this.items.splice(itemIndex, 1);
         this.updateGraphics();
         item.stack = null;
         item.x = this.x;
-        item.y = this.y;
+        item.y = this.y - this.items.length * 2;
+        item.desiredPosition.x = point.x;
+        item.desiredPosition.y = point.y;
         item.angle = this.angle;
         gm.camera.addChild(item);
         if (this.items.length === 1) {
@@ -112,6 +117,8 @@ export default class Stack extends GameObject implements IDraggable, IStackable,
             lastItem.stack = null;
             lastItem.x = this.x;
             lastItem.y = this.y;
+            lastItem.desiredPosition.x = this.x;
+            lastItem.desiredPosition.y = this.y;
             lastItem.angle = this.angle;
             gm.camera.addChild(lastItem);
         }
@@ -131,13 +138,15 @@ export default class Stack extends GameObject implements IDraggable, IStackable,
         }
         const top = this.items[this.items.length - 1];
         if (top) {
-            const item = this.onTakeFromStack(top)
+            const mouseWorldPos = gm.camera.screenToWorldPoint(Controls.instance.mouse.position);
+            const item = this.onTakeFromStack(top, mouseWorldPos)
             if (item) {
                 gm.room.send({
                     type: 'take-object-from-stack',
                     message: {
                         target: this.id,
                         object_from_stack: item?.id,
+                        point: mouseWorldPos,
                     }
                 })
             }

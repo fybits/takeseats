@@ -14,6 +14,7 @@ export default class Card extends GameObject implements IDraggable, IStackable, 
     currentGraphics: Sprite;
     stack: (GameObject & IStackable) | null;
     isFlipped: boolean;
+    canStack: boolean;
 
     constructor(face: Texture, back: Texture) {
         super();
@@ -23,6 +24,7 @@ export default class Card extends GameObject implements IDraggable, IStackable, 
         this.currentGraphics = new Sprite({ texture: face, width: 200, height: 280 });
         this.currentGraphics.anchor.x = 0.5;
         this.currentGraphics.anchor.y = 0.5;
+        this.canStack = true;
         const mask = new Graphics().roundRect(-this.currentGraphics.width / 2, -this.currentGraphics.height / 2, this.currentGraphics.width, this.currentGraphics.height, 10).fill(0xfff);
         this.addChild(mask);
         this.currentGraphics.mask = mask;
@@ -31,7 +33,7 @@ export default class Card extends GameObject implements IDraggable, IStackable, 
         this.eventMode = 'static';
         this.on('pointerdown', this.onDragStart);
         this.on('pointerup', () => {
-            if (gm.dragTarget && isIStackable(gm.dragTarget)) {
+            if (this.canStack && gm.dragTarget && isIStackable(gm.dragTarget)) {
                 this.onStack(gm.dragTarget);
                 gm.room.send({
                     type: 'stack-object',
@@ -57,12 +59,12 @@ export default class Card extends GameObject implements IDraggable, IStackable, 
     }
 
     flip(): void {
-        if (this.currentGraphics.texture === this.face) {
-            this.currentGraphics.texture = this.back;
-            this.isFlipped = true;
-        } else {
+        if (this.isFlipped) {
             this.currentGraphics.texture = this.face;
             this.isFlipped = false;
+        } else {
+            this.currentGraphics.texture = this.back;
+            this.isFlipped = true;
         }
         this.currentGraphics.width = 200;
         this.currentGraphics.height = 280;
@@ -83,6 +85,8 @@ export default class Card extends GameObject implements IDraggable, IStackable, 
         parent.addChild(stack);
         stack.x = this.x;
         stack.y = this.y;
+        stack.desiredPosition.x = this.x;
+        stack.desiredPosition.y = this.y;
         stack.angle = this.angle;
     }
 
