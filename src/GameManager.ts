@@ -370,6 +370,8 @@ export default class GameManager {
                     const player = this.players.get(child.label)!;
                     child.x = player.position.x;
                     child.y = player.position.y;
+                    child.scale.x = 0.08 / this.camera.scale.x
+                    child.scale.y = 0.08 / this.camera.scale.y
                 }
                 if (isIUpdatable(child)) {
                     child.update(ticker.deltaTime);
