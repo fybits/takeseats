@@ -17,7 +17,10 @@ export default class Camera extends Container implements IUpdatable {
     }
 
     screenToWorldPoint(screenPosition: Vector) {
-        return new Vector((this.pivot.x * this.zoom - this.position.x + screenPosition.x) / this.zoom, (this.pivot.y * this.zoom - this.position.y + screenPosition.y) / this.zoom);
+        const screenPos = new Vector(-this.position.x + screenPosition.x, -this.position.y + screenPosition.y);
+        const rotatedScreenPos = new Vector(Math.cos(-this.rotation) * screenPos.x - Math.sin(-this.rotation) * screenPos.y, Math.sin(-this.rotation) * screenPos.x + Math.cos(-this.rotation) * screenPos.y);
+        const pos = new Vector((this.pivot.x * this.zoom + rotatedScreenPos.x) / this.zoom, (this.pivot.y * this.zoom + rotatedScreenPos.y) / this.zoom);
+        return pos;
     }
 
     update(dt: number) {

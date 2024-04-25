@@ -461,24 +461,28 @@ export default class GameManager {
             }
 
             if (angle !== 0) {
-                if (this.dragTarget) {
-                    this.dragTarget.angle += angle * ticker.deltaTime * 2;
-                    this.room.send({
-                        type: 'rotate-object',
-                        message: {
-                            target: this.dragTarget.id,
-                            angle: this.dragTarget.angle,
-                        }
-                    });
-                } else if (this.target) {
-                    this.target.angle += angle * ticker.deltaTime * 2;
-                    this.room.send({
-                        type: 'rotate-object',
-                        message: {
-                            target: this.target.id,
-                            angle: this.target.angle,
-                        }
-                    });
+                if (Controls.instance.keyboard.get('shift') === KeyState.HELD) {
+                    this.camera.angle += angle * ticker.deltaTime;
+                } else {
+                    if (this.dragTarget) {
+                        this.dragTarget.angle += angle * ticker.deltaTime * 2;
+                        this.room.send({
+                            type: 'rotate-object',
+                            message: {
+                                target: this.dragTarget.id,
+                                angle: this.dragTarget.angle,
+                            }
+                        });
+                    } else if (this.target) {
+                        this.target.angle += angle * ticker.deltaTime * 2;
+                        this.room.send({
+                            type: 'rotate-object',
+                            message: {
+                                target: this.target.id,
+                                angle: this.target.angle,
+                            }
+                        });
+                    }
                 }
             }
             this.room.send({
