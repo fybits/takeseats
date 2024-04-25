@@ -49055,11 +49055,7 @@ class PeerRoom {
         this.members = [];
         this.unloadListener = ()=>this.destroy();
         this.listeners = [];
-        this.peer = new (0, _peerjs.Peer)(userId, {
-            host: "147.45.136.216",
-            port: 9000,
-            path: "/takeseats"
-        });
+        this.peer = new (0, _peerjs.Peer)(userId); //, { host: '147.45.136.216', port: 9000, path: '/takeseats' });
         this.peer.on("error", (err)=>{
             console.error(`${err.name}: ${err.message} [${err.type}]`);
         });
