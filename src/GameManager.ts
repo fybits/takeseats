@@ -1,4 +1,4 @@
-import { Application, Assets, Texture, Sprite, Container, FederatedPointerEvent, Spritesheet, SubtractBlend, GlRenderTargetAdaptor, Rectangle } from 'pixi.js';
+import { Application, Assets, Texture, Sprite, Container, FederatedPointerEvent, Spritesheet, SubtractBlend, GlRenderTargetAdaptor, Rectangle, v8_0_0 } from 'pixi.js';
 import { DropShadowFilter, OutlineFilter } from "pixi-filters"
 import Camera from './game-objects/Camera';
 import { DataEventData, PeerRoom } from './PeerRoom';
@@ -20,6 +20,7 @@ import Hand from './game-objects/Hand';
 
 interface Player {
     position: Vector;
+    hand: Hand | null;
 }
 
 export type SerializedObject = {
@@ -37,6 +38,8 @@ export type SerializedObject = {
     type: 'stack';
     items: number[],
 })
+
+const colors = [0xBF1932, 0x0018A8, 0xF0C05A, 0xffffff, 0xB163A3, 0x5F4B8B]
 
 export default class GameManager {
     app: Application;
@@ -104,6 +107,15 @@ export default class GameManager {
                                 this.camera.addChild(stack);
                             }
                         }
+                        for (let i = 0; i < message.hands.length; i++) {
+                            const hand = message.hands[i];
+                            this.hands[i].setPlayer(hand.player);
+                            for (let cardIndex = 0; cardIndex < hand.items.length; cardIndex++) {
+                                const card = this.gameObjects.get(hand.items[cardIndex]);
+                                if (card && card instanceof Card)
+                                    this.hands[i].putCardAt(card, cardIndex);
+                            }
+                        }
                         resetUIDs(message.nextUID);
                     }
                     break;
@@ -155,7 +167,7 @@ export default class GameManager {
                     break;
                 case 'ping-point':
                     if (address !== room?.address()) {
-                        this.camera.addChild(new Ping(GetTexture(message.texture), message.position.x, message.position.y, message.duration, true));
+                        this.camera.addChild(new Ping(GetTexture(message.texture), message.position.x, message.position.y, message.duration, message.tint, true));
                     }
                     break;
                 case 'move-start-object':
@@ -213,6 +225,29 @@ export default class GameManager {
                         this.onTakeObjectFromStack(address, message);
                     }
                     break;
+                case 'player-choose-hand':
+                    if (address !== room?.address()) {
+                        if (this.players.has(address)) {
+                            this.players.get(address)!.hand = this.hands[message.handIndex]
+                            this.hands[message.handIndex].setPlayer(address);
+                        }
+                    }
+                    break;
+                case 'put-card-in-hand':
+                    if (address !== room?.address()) {
+                        const card = this.gameObjects.get(message.card_id);
+                        if (card && card instanceof Card) {
+                            this.hands[message.handIndex].putCardAt(card, message.index);
+                        }
+                    }
+                    break;
+                case 'update-card-hidden':
+                    if (address !== room?.address()) {
+                        const card = this.gameObjects.get(message.card_id);
+                        if (card && card instanceof Card) {
+                            this.hands[message.handIndex].updateCardHidden(card, message.state);
+                        }
+                    }
 
             }
         });
@@ -223,7 +258,14 @@ export default class GameManager {
         for (let obj of this.gameObjects.values()) {
             objectSerialized.push(obj.serialize());
         }
-        this.room.send({ type: 'sync-objects', message: { gameObjects: objectSerialized, nextUID: currentID } })
+        this.room.send({
+            type: 'sync-objects',
+            message: {
+                gameObjects: objectSerialized,
+                hands: this.hands.map((hand) => ({ player: hand.player, items: hand.items.map(item => item.id) })),
+                nextUID: currentID,
+            }
+        })
     }
 
     onPlayerCursor(address: string, data: Extract<DataEventData, { type: 'player-cursor' }>["message"]) {
@@ -234,6 +276,7 @@ export default class GameManager {
         } else {
             const player: Player = {
                 position: data.position,
+                hand: null,
             };
             this.players.set(address, player);
             const cursorSprite = new Sprite({ anchor: { x: 0.5, y: 0.5 }, texture: Texture.from('cursor'), width: 24, height: 24, x: player.position.x, y: player.position.y, zIndex: 1000 });
@@ -274,6 +317,16 @@ export default class GameManager {
     target: GameObject | null;
 
     onMoveStart(target: GameObject) {
+        if (target.parent.label === 'hand_container' && isIStackable(target)) {
+            target.canStack = false;
+            const center = this.camera.toLocal(target.position, target.parent);
+            target.x = center.x;
+            target.y = center.y;
+            target.desiredPosition.x = center.x;
+            target.desiredPosition.y = center.y;
+            target.angle += target.parent.parent.angle;
+            this.camera.addChild(target);
+        }
         if (target.parent !== this.camera) {
             this.camera.addChild(target);
             const mousePos = Controls.instance.mouse.position;
@@ -301,22 +354,7 @@ export default class GameManager {
     onDragStart(item: GameObject & IDraggable) {
         this.dragTarget = item;
         console.log('drag start')
-        if (this.dragTarget.parent.label === 'hand_container' && isIStackable(this.dragTarget)) {
-            this.dragTarget.canStack = false;
-            const mousePos = Controls.instance.mouse.position;
-            const center = this.camera.screenToWorldPoint(new Vector(mousePos.x, mousePos.y));
-            this.dragTarget.x = center.x;
-            this.dragTarget.y = center.y;
-            this.dragTarget.desiredPosition.x = center.x;
-            this.dragTarget.desiredPosition.y = center.y;
-            this.dragTarget.angle += this.dragTarget.parent.parent.angle;
-            this.camera.addChild(this.dragTarget);
-            // this.app.stage.addChild(this.dragTarget);
-            // this.dragTarget.x = Controls.instance.mouse.position.x;
-            // this.dragTarget.y = Controls.instance.mouse.position.y;
-            // this.dragTarget.desiredPosition.x = Controls.instance.mouse.position.x;
-            // this.dragTarget.desiredPosition.y = Controls.instance.mouse.position.y;
-        }
+
         this.onMoveStart(item)
         this.room.send({
             type: 'move-start-object', message: {
@@ -361,6 +399,27 @@ export default class GameManager {
         }
     }
 
+    takeCardsToHand(amount: number) {
+        const hand = this.hands.find((hand) => hand.player === this.room.address());
+        if (hand) {
+            if (this.target && this.target instanceof Card) {
+                this.target.canStack = false;
+                hand.putCardAt(this.target as Card, hand.items.length)
+            }
+            if (this.target && this.target instanceof Stack) {
+                const mousePos = this.camera.screenToWorldPoint(Controls.instance.mouse.position);
+                for (let i = 0; i < amount; i++) {
+                    if (this.target.items.length > 1) {
+                        const item = this.target.onTakeFromStack(this.target.items[this.target.items.length - 1], mousePos);
+                        hand.putCardAt(item as Card, hand.items.length)
+                    }
+                }
+                // this.hand.addChild(this.target);
+                // this.target.desiredPosition.y = 0;
+            }
+        }
+    }
+
     async startGame() {
 
         const spritesheet = Assets.get<Spritesheet>('cards-sheet');
@@ -374,77 +433,27 @@ export default class GameManager {
             }
             this.camera.addChild(new Stack(cards));
         }
-        // this.hand = new Container({ cursor: "grab" });
-        // this.hand.filters = [new DropShadowFilter({ blur: 16, offset: { x: 8, y: 40 }, pixelSize: { x: 1, y: 1 }, quality: 100 })];
-        // this.hand.width = this.app.screen.width / 2;
-        // this.hand.height = 100;
-        // this.hand.pivot.x = this.app.screen.width / 4;
-        // this.hand.pivot.y = 100;
-        // this.hand.eventMode = 'static';
-        // this.hand.x = this.app.screen.width / 2;
-        // this.hand.y = this.app.screen.height + 100;
-        // this.hand.zIndex = 0;
-        // this.hand.on('pointerup', () => {
-        //     if (this.dragTarget && this.dragTarget instanceof Card) {
-        //         this.dragTarget.canStack = false;
-        //         this.hand.addChild(this.dragTarget);
-        //         // this.dragTarget.desiredPosition.x = 0;
-        //         this.dragTarget.desiredPosition.y = 0;
-        //         this.dragTarget.y = 0;
-        //     }
-        // });
-        // this.hand.on('pointerover', () => {
-        //     this.hand.y = this.app.screen.height - 10;
-        //     if (this.dragTarget && this.dragTarget instanceof Card) {
-        //         this.dragTarget.canStack = false;
-        //         this.app.stage.addChild(this.dragTarget);
-        //         this.dragTarget.x = Controls.instance.mouse.position.x;
-        //         this.dragTarget.y = Controls.instance.mouse.position.y;
-        //     }
-        // });
-        // this.hand.on('pointerout', () => {
-        //     this.hand.y = this.app.screen.height + 100;
-        //     if (this.dragTarget && this.dragTarget instanceof Card) {
-        //         this.dragTarget.canStack = true;
-        //         this.camera.addChild(this.dragTarget);
-        //         // const mousePos = this.camera.screenToWorldPoint(Controls.instance.mouse.position);
-        //         // this.dragTarget.x = mousePos.x;
-        //         // this.dragTarget.y = mousePos.y;
-        //     }
-        // });
-        // this.app.stage.addChild(this.hand);
 
-        // 1000 1000 0
-        //     - 1000 1000 0
-
-        // 1000 - 1000 90
-        // 1000 1000 90
-
-        //     - 1000 - 1000 180
-        // 1000 - 1000 180
-
-        //     - 1000 1000 270
-        //         - 1000 - 1000 270
         this.hands = [];
-        let hand = new Hand(1000, 1000, 1200, 400);
+        let hand = new Hand(1000, 1000, 1200, 400, colors[0]);
         this.hands.push(hand);
 
-        hand = new Hand(-1000, 1000, 1200, 400);
+        hand = new Hand(-1000, 1000, 1200, 400, colors[1]);
         this.hands.push(hand);
 
-        hand = new Hand(-1800, 0, 1200, 400);
+        hand = new Hand(-1800, 0, 1200, 400, colors[2]);
         hand.angle = 90;
         this.hands.push(hand);
 
-        hand = new Hand(-1000, -1000, 1200, 400);
+        hand = new Hand(-1000, -1000, 1200, 400, colors[3]);
         hand.angle = 180;
         this.hands.push(hand);
 
-        hand = new Hand(1000, -1000, 1200, 400);
+        hand = new Hand(1000, -1000, 1200, 400, colors[4]);
         hand.angle = 180;
         this.hands.push(hand);
 
-        hand = new Hand(1800, 0, 1200, 400);
+        hand = new Hand(1800, 0, 1200, 400, colors[5]);
         hand.angle = 270;
         this.hands.push(hand);
 
@@ -488,6 +497,10 @@ export default class GameManager {
                     child.y = player.position.y;
                     child.scale.x = 0.08 / this.camera.scale.x
                     child.scale.y = 0.08 / this.camera.scale.y
+                    if (player.hand) {
+                        console.log(player.hand.color)
+                        child.tint = player.hand.color;
+                    }
                 }
                 if (isIUpdatable(child)) {
                     child.update(ticker.deltaTime);
@@ -575,16 +588,34 @@ export default class GameManager {
 
             if (Controls.instance.keyboard.get('tab') === KeyState.PRESSED) {
                 const mousePos = this.camera.screenToWorldPoint(Controls.instance.mouse.position);
-                this.camera.addChild(new Ping(GetTexture('cursor'), mousePos.x, mousePos.y))
+                const myHand = this.hands.find((hand) => hand.player === this.room.address());
+                this.camera.addChild(new Ping(GetTexture('arrow'), mousePos.x, mousePos.y, 1500, myHand ? myHand.color : 0xffffff))
             }
 
-            // if (Controls.instance.keyboard.get('1') === KeyState.PRESSED) {
-            //     if (this.target && this.target instanceof Card) {
-            //         this.target.canStack = false;
-            //         this.hand.addChild(this.target);
-            //         this.target.desiredPosition.y = 0;
-            //     }
-            // }
+            if (Controls.instance.keyboard.get('1') === KeyState.PRESSED) {
+                this.takeCardsToHand(1);
+            }
+            if (Controls.instance.keyboard.get('2') === KeyState.PRESSED) {
+                this.takeCardsToHand(2);
+            }
+            if (Controls.instance.keyboard.get('3') === KeyState.PRESSED) {
+                this.takeCardsToHand(3);
+            }
+            if (Controls.instance.keyboard.get('4') === KeyState.PRESSED) {
+                this.takeCardsToHand(4);
+            }
+            if (Controls.instance.keyboard.get('5') === KeyState.PRESSED) {
+                this.takeCardsToHand(5);
+            }
+            if (Controls.instance.keyboard.get('6') === KeyState.PRESSED) {
+                this.takeCardsToHand(6);
+            }
+            if (Controls.instance.keyboard.get('7') === KeyState.PRESSED) {
+                this.takeCardsToHand(7);
+            }
+            if (Controls.instance.keyboard.get('8') === KeyState.PRESSED) {
+                this.takeCardsToHand(8);
+            }
 
             if (angle !== 0) {
                 if (Controls.instance.keyboard.get('shift') === KeyState.HELD) {

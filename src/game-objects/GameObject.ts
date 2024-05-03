@@ -49,5 +49,5 @@ export default abstract class GameObject extends Container implements IUpdatable
 
     abstract serialize(): SerializedObject;
 
-    abstract reloadTextures();
+    abstract reloadTextures(): void;
 }

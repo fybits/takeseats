@@ -6,15 +6,15 @@ import { DataConnection, Peer } from 'peerjs'
 import { Vector } from './utils/Vector';
 import GameObject from './game-objects/GameObject';
 import { SerializedObject } from './GameManager';
-import { SpritesheetData } from 'pixi.js';
+import { SpritesheetData, tilingBit } from 'pixi.js';
 
 export type DataEventData =
     | { type: 'members-list', message: string[] }
-    | { type: 'sync-objects', message: { gameObjects: SerializedObject[], nextUID: number } }
+    | { type: 'sync-objects', message: { gameObjects: SerializedObject[], hands: { items: number[], player: string | null }[], nextUID: number } }
     | { type: 'sync-resources', message: { alias: string, spritesheetData?: SpritesheetData, src: string }[] }
     | { type: 'request-resource', message: { alias: string }[] }
     | { type: 'chat' | 'announce', message: string }
-    | { type: 'ping-point', message: { position: Vector, texture: string, duration: number } }
+    | { type: 'ping-point', message: { position: Vector, texture: string, tint: number, duration: number } }
     | { type: 'player-cursor', message: { position: Vector } }
     | { type: 'move-start-object', message: { target: number } }
     | { type: 'move-object', message: { target: number, position: Vector } }
@@ -24,7 +24,10 @@ export type DataEventData =
     | { type: 'flip-object', message: { target: number } }
     | { type: 'stack-object', message: { target: number, object_to_stack: number } }
     | { type: 'take-object-from-stack', message: { target: number, object_from_stack: number, point: Vector } }
+    | { type: 'put-card-in-hand', message: { handIndex: number, card_id: number, index: number } }
+    | { type: 'player-choose-hand', message: { handIndex: number } }
     | { type: 'player-disconnected', message: null }
+    | { type: 'update-card-hidden', message: { card_id: number, handIndex: number, state: 'enter' | 'leave' } }
 
 export class PeerRoom {
     private members: DataConnection[] = [];
@@ -34,7 +37,7 @@ export class PeerRoom {
     private listeners: ((address: string, data: DataEventData) => void)[] = []
 
     constructor(private userId: string) {
-        this.peer = new Peer(userId, { host: '147.45.136.216', port: 9000, path: '/takeseats' });
+        this.peer = new Peer(userId, { host: '147.45.136.216', port: 9000, path: '/takeseats', secure: false });
         this.peer.on('error', (err) => { console.error(`${err.name}: ${err.message} [${err.type}]`) })
         this.peer.on('connection', (member) => this.addDataConnectionEventHandlers(member));
         window.addEventListener('beforeunload', this.unloadListener)

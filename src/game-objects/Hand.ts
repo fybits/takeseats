@@ -1,8 +1,8 @@
 import { BackdropBlurFilter, DropShadowFilter } from "pixi-filters";
 import { Container, Graphics, Rectangle, Text } from "pixi.js";
 import Card from "./Card";
-import Controls from "../Controls";
 import IUpdatable from "./interfaces/IUpdatable";
+import GameObject from "./GameObject";
 
 export default class Hand extends Container implements IUpdatable {
     itemsContainer: Container;
@@ -11,8 +11,13 @@ export default class Hand extends Container implements IUpdatable {
     playerNameText: Text;
     hidden: boolean;
     player: string | null;
+    color: number;
 
-    constructor(x: number, y: number, width: number, height: number) {
+    get items(): Card[] {
+        return this.itemsContainer.children as Card[];
+    }
+
+    constructor(x: number, y: number, width: number, height: number, color: number = 0xffffff) {
         super();
         this.player = null;
         this.label = 'hand';
@@ -22,6 +27,7 @@ export default class Hand extends Container implements IUpdatable {
         this.hidden = false;
         this.pivot.x = this.handWidth / 2;
         this.eventMode = 'static';
+        this.color = color;
         const g = new Graphics();
         g.roundRect(0, 0, this.handWidth, this.handHeight, 20).stroke({ color: 0x202020, width: 8 });
         this.addChild(g);
@@ -30,7 +36,7 @@ export default class Hand extends Container implements IUpdatable {
         this.addChild(this.playerNameText)
         this.playerNameText.anchor.x = 0.5;
         this.playerNameText.style.fontSize = 120;
-        this.playerNameText.style.fill = 0xffffff;
+        this.playerNameText.style.fill = color;
         this.playerNameText.style.fontWeight = 'bold';
         this.playerNameText.x = this.handWidth / 2;
         this.playerNameText.y = this.handHeight / 2 - this.playerNameText.height / 2;
@@ -48,42 +54,79 @@ export default class Hand extends Container implements IUpdatable {
         this.playerNameText.eventMode = 'static';
         this.playerNameText.on('pointerdown', (event) => {
             this.setPlayer(gm.room.address());
+            gm.room.send({
+                type: 'player-choose-hand', message: {
+                    handIndex: gm.hands.findIndex((hand) => hand === this)
+                }
+            })
         })
+
+        const clamp = (val: number, min: number, max: number) => Math.min(Math.max(val, min), max)
 
         this.on('pointerup', (event) => {
             if (gm.dragTarget && gm.dragTarget instanceof Card) {
-                console.log(event)
-                gm.dragTarget.canStack = false;
                 const x = this.itemsContainer.toLocal(event.global).x;
-                const clamp = (val, min, max) => Math.min(Math.max(val, min), max)
                 const ratio = clamp(x + gm.dragTarget.width / 2, 0, this.itemsContainer.width) / this.itemsContainer.width;
                 const index = Math.round(ratio * this.itemsContainer.children.length);
-                console.log(x, this.itemsContainer.width, ratio, index)
-                this.itemsContainer.addChild(gm.dragTarget);
-                this.itemsContainer.setChildIndex(gm.dragTarget, index)
-                gm.dragTarget.x = x;
-                gm.dragTarget.y = this.handHeight / 2;
-                gm.dragTarget.desiredPosition.y = this.handHeight / 2;
-                gm.dragTarget.angle += -this.angle;
+                this.putCardAt(gm.dragTarget, index);
+                gm.room.send({
+                    type: 'put-card-in-hand', message: {
+                        card_id: gm.dragTarget.id,
+                        index,
+                        handIndex: gm.hands.findIndex((hand) => hand === this)
+                    }
+                })
             }
         });
         this.on('pointerenter', () => {
             if (gm.dragTarget && gm.dragTarget instanceof Card) {
-                gm.dragTarget.canStack = false;
-                gm.dragTarget.angle = this.angle;
-                if (this.hidden && gm.dragTarget.currentGraphics.texture !== gm.dragTarget.back) {
-                    gm.dragTarget.currentGraphics.texture = gm.dragTarget.back;
-                }
+                this.updateCardHidden(gm.dragTarget, 'enter')
+                gm.room.send({
+                    type: 'update-card-hidden', message: {
+                        card_id: gm.dragTarget.id,
+                        state: 'enter',
+                        handIndex: gm.hands.findIndex((hand) => hand === this)
+                    }
+                })
             }
         })
         this.on('pointerleave', () => {
             if (gm.dragTarget && gm.dragTarget instanceof Card) {
-                gm.dragTarget.canStack = true;
-                if (!gm.dragTarget.isFlipped) {
-                    gm.dragTarget.currentGraphics.texture = gm.dragTarget.face;
-                }
+                this.updateCardHidden(gm.dragTarget, 'leave')
+                gm.room.send({
+                    type: 'update-card-hidden', message: {
+                        card_id: gm.dragTarget.id,
+                        state: 'leave',
+                        handIndex: gm.hands.findIndex((hand) => hand === this)
+                    }
+                })
             }
         });
+    }
+
+    updateCardHidden(card: Card, state: 'enter' | 'leave') {
+        if (state === 'enter') {
+            card.canStack = false;
+            card.angle = this.angle;
+            if (this.hidden && card.currentGraphics.texture !== card.back) {
+                card.currentGraphics.texture = card.back;
+            }
+        } else {
+            card.canStack = true;
+            if (!card.isFlipped) {
+                card.currentGraphics.texture = card.face;
+            }
+        }
+    }
+
+    putCardAt(card: Card, index: number) {
+        card.canStack = false;
+        this.itemsContainer.addChild(card);
+        this.itemsContainer.setChildIndex(card, index)
+        card.x = this.itemsContainer.toLocal(card, gm.camera).x;
+        card.y = this.handHeight / 2;
+        card.desiredPosition.y = this.handHeight / 2;
+        card.angle += -this.angle;
     }
 
     setPlayer(player: string | null) {
@@ -98,6 +141,9 @@ export default class Hand extends Container implements IUpdatable {
                 hand.setPlayer(null);
             }
         })
+        if (gm.players.has(player)) {
+            gm.players.get(player)!.hand = this;
+        }
         this.player = player;
         this.playerNameText.text = player;
         this.playerNameText.y = this.handHeight + 50;
@@ -111,7 +157,11 @@ export default class Hand extends Container implements IUpdatable {
             const wholeWidth = 0.8 * Math.min(this.handWidth, card.width * n) - card.width;
             card.desiredPosition.x = i / Math.max(1, n - 1) * wholeWidth;
             this.itemsContainer.x = this.handWidth / 2 - wholeWidth / 2;
-            card.desiredPosition.y = this.handHeight / 2;
+            if (gm.dragTarget === null && gm.target === card) {
+                card.desiredPosition.y = this.handHeight / 2 - 10;
+            } else {
+                card.desiredPosition.y = this.handHeight / 2;
+            }
             if (this.hidden && card.currentGraphics.texture !== card.back) {
                 card.currentGraphics.texture = card.back;
             }
