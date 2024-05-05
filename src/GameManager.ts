@@ -72,9 +72,12 @@ export default class GameManager {
         this.playersListElement.appendChild(element);
 
         room.on("message", (address, { type, message }) => {
+            if (address !== room.address()) {
+                console.log(type)
+            }
             switch (type) {
                 case 'announce':
-                    if (address !== room?.address()) {
+                    if (address !== room.address()) {
                         const element = document.createElement('div');
                         element.textContent = address;
                         element.setAttribute('address', address);
@@ -84,7 +87,7 @@ export default class GameManager {
                     }
                     break;
                 case 'sync-objects':
-                    if (address !== room?.address()) {
+                    if (address !== room.address()) {
                         console.log('started syncing objects')
                         this.gameObjects.forEach((i) => i.destroy({ children: true }));
                         this.gameObjects.clear();
@@ -131,12 +134,12 @@ export default class GameManager {
                     }
                     break;
                 case 'player-cursor':
-                    if (address !== room?.address()) {
+                    if (address !== room.address()) {
                         this.onPlayerCursor(address, message);
                     }
                     break;
                 case 'request-resource':
-                    if (address !== room?.address()) {
+                    if (address !== room.address()) {
                         room.sendTo(address, {
                             type: 'sync-resources',
                             message: message.map((item): Extract<DataEventData, { type: 'sync-resources' }>['message'][0] => {
@@ -158,7 +161,7 @@ export default class GameManager {
                     }
                     break;
                 case 'sync-resources':
-                    if (address !== room?.address()) {
+                    if (address !== room.address()) {
                         console.log('started syncing resources')
                         Promise.all(message.map(async ({ alias, src, spritesheetData }) => {
                             if (spritesheetData) {
@@ -179,12 +182,12 @@ export default class GameManager {
                     }
                     break;
                 case 'ping-point':
-                    if (address !== room?.address()) {
+                    if (address !== room.address()) {
                         this.camera.addChild(new Ping(GetTexture(message.texture), message.position.x, message.position.y, message.duration, message.tint, true));
                     }
                     break;
                 case 'move-start-object':
-                    if (address !== room?.address()) {
+                    if (address !== room.address()) {
                         const item = this.gameObjects.get(message.target);
                         if (item) {
                             this.onMoveStart(item as GameObject);
@@ -192,12 +195,12 @@ export default class GameManager {
                     }
                     break;
                 case 'move-object':
-                    if (address !== room?.address()) {
+                    if (address !== room.address()) {
                         this.onObjectMove(address, message);
                     }
                     break;
                 case 'move-end-object':
-                    if (address !== room?.address()) {
+                    if (address !== room.address()) {
                         const item = this.gameObjects.get(message.target);
                         if (item) {
                             this.onMoveEnd(item as GameObject);
@@ -205,7 +208,7 @@ export default class GameManager {
                     }
                     break;
                 case 'rotate-object':
-                    if (address !== room?.address()) {
+                    if (address !== room.address()) {
                         const item = this.gameObjects.get(message.target);
                         if (item) {
                             item.angle = message.angle;
@@ -213,7 +216,7 @@ export default class GameManager {
                     }
                     break;
                 case 'roll-object':
-                    if (address !== room?.address()) {
+                    if (address !== room.address()) {
                         const item = this.gameObjects.get(message.target);
                         if (item && isIRollable(item)) {
                             item.roll(rand(message.seed));
@@ -221,7 +224,7 @@ export default class GameManager {
                     }
                     break;
                 case 'flip-object':
-                    if (address !== room?.address()) {
+                    if (address !== room.address()) {
                         const item = this.gameObjects.get(message.target);
                         if (item && isIFlipable(item)) {
                             item.flip();
@@ -229,17 +232,17 @@ export default class GameManager {
                     }
                     break;
                 case 'stack-object':
-                    if (address !== room?.address()) {
+                    if (address !== room.address()) {
                         this.onObjectStack(address, message);
                     }
                     break;
                 case 'take-object-from-stack':
-                    if (address !== room?.address()) {
+                    if (address !== room.address()) {
                         this.onTakeObjectFromStack(address, message);
                     }
                     break;
                 case 'player-choose-hand':
-                    if (address !== room?.address()) {
+                    if (address !== room.address()) {
                         if (this.players.has(address)) {
                             this.players.get(address)!.hand = this.hands[message.handIndex]
                             this.hands[message.handIndex].setPlayer(address);
@@ -247,7 +250,7 @@ export default class GameManager {
                     }
                     break;
                 case 'put-card-in-hand':
-                    if (address !== room?.address()) {
+                    if (address !== room.address()) {
                         const card = this.gameObjects.get(message.card_id);
                         if (card && card instanceof Card) {
                             this.hands[message.handIndex].putCardAt(card, message.index);
@@ -255,7 +258,7 @@ export default class GameManager {
                     }
                     break;
                 case 'update-card-hidden':
-                    if (address !== room?.address()) {
+                    if (address !== room.address()) {
                         const card = this.gameObjects.get(message.card_id);
                         if (card && card instanceof Card) {
                             this.hands[message.handIndex].updateCardHidden(card, message.state);
