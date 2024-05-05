@@ -149,8 +149,9 @@ export default class Hand extends Container implements IUpdatable {
         this.player = player;
         this.playerNameText.text = player;
         this.playerNameText.y = this.handHeight + 50;
-        const playerElement = gm.playersListElement.querySelector<HTMLDivElement>(`div[address=${player}]`)!;
-        playerElement.style.color = colorToHexString(this.color);
+        const playerElement = gm.playersListElement.querySelector<HTMLDivElement>(`div[address=${player}]`);
+        if (playerElement)
+            playerElement.style.color = colorToHexString(this.color);
     }
 
     update(dt: number): void {
