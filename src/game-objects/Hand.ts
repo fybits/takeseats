@@ -1,8 +1,8 @@
-import { BackdropBlurFilter, DropShadowFilter } from "pixi-filters";
+import { DropShadowFilter } from "pixi-filters";
 import { Container, Graphics, Rectangle, Text } from "pixi.js";
 import Card from "./Card";
 import IUpdatable from "./interfaces/IUpdatable";
-import GameObject from "./GameObject";
+import { colorToHexString } from "../utils";
 
 export default class Hand extends Container implements IUpdatable {
     itemsContainer: Container;
@@ -47,7 +47,9 @@ export default class Hand extends Container implements IUpdatable {
         this.zIndex = 0;
         this.itemsContainer = new Container();
         this.itemsContainer.label = 'hand_container';
-        this.itemsContainer.filters = [new DropShadowFilter({ blur: 16, offset: { x: 8, y: 40 }, pixelSize: { x: 1, y: 1 }, quality: 100 })];
+        const dropShadowFilter = new DropShadowFilter({ blur: 16, offset: { x: 8, y: 40 }, pixelSize: { x: 1, y: 1 }, quality: 100 });
+        dropShadowFilter.antialias = 'on';
+        this.itemsContainer.filters = [dropShadowFilter];
         this.addChild(this.itemsContainer);
 
         this.interactiveChildren = true;
@@ -147,6 +149,8 @@ export default class Hand extends Container implements IUpdatable {
         this.player = player;
         this.playerNameText.text = player;
         this.playerNameText.y = this.handHeight + 50;
+        const playerElement = gm.playersListElement.querySelector<HTMLDivElement>(`div[address=${player}]`)!;
+        playerElement.style.color = colorToHexString(this.color);
     }
 
     update(dt: number): void {

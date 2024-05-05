@@ -7,3 +7,6 @@ export const sortedClamp = (value: number, a: number, b: number): number => {
 };
 
 
+export const colorToHexString = (dColor) => {
+    return '#' + ("000000" + dColor.toString(16)).slice(-6);
+}

@@ -39,7 +39,7 @@ export type SerializedObject = {
     items: number[],
 })
 
-const colors = [0xBF1932, 0x0018A8, 0xF0C05A, 0xffffff, 0xB163A3, 0x5F4B8B]
+const colors = [0xEE4B2B, 0x0096FF, 0xF0C05A, 0xffffff, 0xB163A3, 0x7F00FF]
 
 export default class GameManager {
     app: Application;
@@ -56,6 +56,8 @@ export default class GameManager {
     peekViewZoom: number = 0.5;
     hands: Hand[];
 
+    playersListElement: HTMLDivElement;
+
     constructor(app: Application, camera: Camera, room: PeerRoom, isHost: boolean) {
         this.app = app;
         this.camera = camera;
@@ -63,11 +65,20 @@ export default class GameManager {
         this.players = new Map<string, Player>();
         this.gameObjects = new Map<number, GameObject>();
         this.isHost = isHost;
+        this.playersListElement = document.querySelector('#players-list')!;
+        const element = document.createElement('div');
+        element.textContent = room.address();
+        element.setAttribute('address', this.room.address());
+        this.playersListElement.appendChild(element);
 
         room.on("message", (address, { type, message }) => {
             switch (type) {
                 case 'announce':
                     if (address !== room?.address()) {
+                        const element = document.createElement('div');
+                        element.textContent = address;
+                        element.setAttribute('address', address);
+                        this.playersListElement.appendChild(element);
                         console.log(address, 'connected!')
                         if (isHost) this.sync();
                     }
@@ -126,7 +137,7 @@ export default class GameManager {
                     break;
                 case 'request-resource':
                     if (address !== room?.address()) {
-                        room.send({
+                        room.sendTo(address, {
                             type: 'sync-resources',
                             message: message.map((item): Extract<DataEventData, { type: 'sync-resources' }>['message'][0] => {
                                 const spritesheetMatch = item.alias.match(/(.+)-sheet$/);
@@ -149,8 +160,7 @@ export default class GameManager {
                 case 'sync-resources':
                     if (address !== room?.address()) {
                         console.log('started syncing resources')
-                        console.log(message)
-                        message.forEach(async ({ alias, src, spritesheetData }) => {
+                        Promise.all(message.map(async ({ alias, src, spritesheetData }) => {
                             if (spritesheetData) {
                                 Assets.add({ alias: alias, src: src });
                                 await Assets.load<Texture>([alias]);
@@ -161,8 +171,11 @@ export default class GameManager {
                             } else {
                                 Assets.add({ alias, src })
                             }
+                        })).then(() => {
+                            Assets.load(message.map(ass => ass.alias)).then(() => {
+                                this.gameObjects.forEach((go) => go.reloadTextures())
+                            })
                         });
-                        Assets.load(message.map(ass => ass.alias)).then(() => { console.log(Assets.cache); this.gameObjects.forEach((go) => go.reloadTextures()) })
                     }
                     break;
                 case 'ping-point':
@@ -353,8 +366,6 @@ export default class GameManager {
 
     onDragStart(item: GameObject & IDraggable) {
         this.dragTarget = item;
-        console.log('drag start')
-
         this.onMoveStart(item)
         this.room.send({
             type: 'move-start-object', message: {
@@ -422,17 +433,17 @@ export default class GameManager {
 
     async startGame() {
 
-        const spritesheet = Assets.get<Spritesheet>('cards-sheet');
+        // const spritesheet = Assets.get<Spritesheet>('cards-sheet');
 
-        if (this.isHost) {
-            const cards: Card[] = [];
+        // if (this.isHost) {
+        //     const cards: Card[] = [];
 
-            for (let i = 0; i < Object.keys(spritesheet.textures).length - 1; i++) {
-                const card = new Card(spritesheet.textures[`card${i + 1}`], spritesheet.textures[`card32`]);
-                cards.push(card);
-            }
-            this.camera.addChild(new Stack(cards));
-        }
+        //     for (let i = 0; i < Object.keys(spritesheet.textures).length - 1; i++) {
+        //         const card = new Card(spritesheet.textures[`card${i + 1}`], spritesheet.textures[`card32`]);
+        //         cards.push(card);
+        //     }
+        //     this.camera.addChild(new Stack(cards));
+        // }
 
         this.hands = [];
         let hand = new Hand(1000, 1000, 1200, 400, colors[0]);
@@ -484,6 +495,12 @@ export default class GameManager {
         this.camera.position.x = center.x
         this.camera.position.y = center.y
 
+        window.addEventListener('resize', () => {
+            const center = new Vector(this.app.screen.width / 2, this.app.screen.height / 2);
+            this.camera.position.x = center.x
+            this.camera.position.y = center.y
+        })
+
         this.app.ticker.add((ticker) => {
             for (const child of this.app.stage.children) {
                 if (isIUpdatable(child)) {
@@ -498,7 +515,6 @@ export default class GameManager {
                     child.scale.x = 0.08 / this.camera.scale.x
                     child.scale.y = 0.08 / this.camera.scale.y
                     if (player.hand) {
-                        console.log(player.hand.color)
                         child.tint = player.hand.color;
                     }
                 }

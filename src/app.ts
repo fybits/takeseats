@@ -52,11 +52,9 @@ let fetchTimeout: number | undefined;
 
 export const GetTexture = (key: string) => {
     let texture = Assets.get<Texture>(key);
-    // console.log(texture)
     if (!texture) {
         const isSpritesheetMatch = key.match(/(.+)-\d+$/);
         if (isSpritesheetMatch) {
-            // console.log(isSpritesheetMatch)
             aliasesToFetch.add(`${isSpritesheetMatch[1]}-sheet`);
         } else {
             aliasesToFetch.add(key);
@@ -65,6 +63,7 @@ export const GetTexture = (key: string) => {
             clearTimeout(fetchTimeout);
         }
         fetchTimeout = setTimeout(() => {
+            console.log('request-resource')
             room?.send({
                 type: 'request-resource',
                 message: Array.from(aliasesToFetch.values()).map((key) => ({ alias: key })),
@@ -89,9 +88,9 @@ export const GetTexture = (key: string) => {
     Assets.add({ alias: "card-face", src: "assets/card-face.png" });
     Assets.add({ alias: "cursor", src: "assets/cursor.png" });
     Assets.add({ alias: "arrow", src: "assets/arrow.png" });
-    Assets.add({ alias: 'cards-sheet', src: "assets/spritesheet.json" })
-    await Assets.load(['card', 'cursor', 'arrow', 'card-face', 'cards-sheet']);
-    // await Assets.load(['card', 'cursor', 'arrow', 'card-face']);
+    // Assets.add({ alias: 'cards-sheet', src: "assets/spritesheet.json" })
+    // await Assets.load(['card', 'cursor', 'arrow', 'card-face', 'cards-sheet']);
+    await Assets.load(['card', 'cursor', 'arrow', 'card-face']);
     const connectToLobby = (nickname: string, lobbyKey?: string) => {
         localStorage.setItem('nickname', nickname);
         room = new PeerRoom(nickname);
@@ -205,7 +204,7 @@ export const GetTexture = (key: string) => {
 
             const spritesheet = Assets.get<Spritesheet>(`${spritesheetFile.name}-sheet`);
             const backTexture = isBackSeparate ? GetTexture(backFile.name) : spritesheet.textures[`${spritesheetFile.name}-${backIndex}`];
-            console.log(backTexture)
+
             const cards: Card[] = [];
 
             for (let i = 0; i < Object.keys(spritesheet.textures).length - 1 + +isBackSeparate; i++) {

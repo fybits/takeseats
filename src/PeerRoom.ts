@@ -37,7 +37,7 @@ export class PeerRoom {
     private listeners: ((address: string, data: DataEventData) => void)[] = []
 
     constructor(private userId: string) {
-        this.peer = new Peer(userId, { host: '147.45.136.216', port: 9000, path: '/takeseats', secure: false });
+        this.peer = new Peer(userId, { host: 'takeseats.ru', port: 9000, path: '/takeseats', secure: false });
         this.peer.on('error', (err) => { console.error(`${err.name}: ${err.message} [${err.type}]`) })
         this.peer.on('connection', (member) => this.addDataConnectionEventHandlers(member));
         window.addEventListener('beforeunload', this.unloadListener)
@@ -101,5 +101,10 @@ export class PeerRoom {
     send(arg: DataEventData, chunked?: boolean) {
         this.listeners.forEach(l => l(this.userId, arg))
         this.members.forEach(m => m.send(arg, chunked))
+    }
+
+    sendTo(to: string, arg: DataEventData, chunked?: boolean) {
+        const peer = this.members.find(m => m.peer === to);
+        if (peer) peer.send(arg, chunked)
     }
 }

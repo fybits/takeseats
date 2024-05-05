@@ -26,6 +26,20 @@ canvas {
         pointer-events: all;
     }
 
+    #players-list {
+        position: absolute;
+        top: 0;
+        right: 0;
+        width: fit-content;
+        display: flex;
+        flex-direction: column;
+        margin-right: 4px;
+
+        &>div {
+            font-weight: bold;
+        }
+    }
+
     #toolbar {
         display: flex;
         user-select: none;
