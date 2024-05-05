@@ -45,7 +45,7 @@ export class PeerRoom {
             },
         });
         this.peer.on('error', (err) => { console.error(`${err.name}: ${err.message} [${err.type}]`) })
-        this.peer.on('connection', (member) => this.addDataConnectionEventHandlers(member));
+        this.peer.on('connection', (member) => this.addDataConnectionEventHandlers(member, true));
         window.addEventListener('beforeunload', this.unloadListener)
     }
 
@@ -53,15 +53,15 @@ export class PeerRoom {
         this.listeners.forEach((listener) => listener(address, data));
     }
 
-    private addDataConnectionEventHandlers(dc: DataConnection) {
+    private addDataConnectionEventHandlers(dc: DataConnection, incoming: boolean = false) {
         dc.on('open', () => {
             this.members.push(dc);
             dc.send({ type: 'members-list', message: this.members.map((m) => m.peer).filter(p => p !== dc.peer) });
             console.log('sending members', this.members)
             dc.on('iceStateChanged', (state) => {
-                if (state === 'disconnected') {
-                    const bakcConnection = this.peer.connect(dc.peer);
-                    this.addDataConnectionEventHandlers(bakcConnection);
+                if (state === 'disconnected' && incoming) {
+                    const backConnection = this.peer.connect(dc.peer);
+                    this.addDataConnectionEventHandlers(backConnection);
                 }
             });
             this.emit(dc.peer, { type: 'announce', message: dc.peer });
