@@ -62,6 +62,7 @@ export class PeerRoom {
                 if (state === 'disconnected' && incoming) {
                     const backConnection = this.peer.connect(dc.peer);
                     this.addDataConnectionEventHandlers(backConnection);
+                    dc.close();
                 }
             });
             this.emit(dc.peer, { type: 'announce', message: dc.peer });

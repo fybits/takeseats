@@ -1,4 +1,4 @@
-import { Application, Assets, Texture, Sprite, Container, FederatedPointerEvent, Spritesheet, SubtractBlend, GlRenderTargetAdaptor, Rectangle, v8_0_0 } from 'pixi.js';
+import { Application, Assets, Texture, Sprite, Container, FederatedPointerEvent, Spritesheet, SubtractBlend, GlRenderTargetAdaptor, Rectangle, v8_0_0, buildAdaptiveQuadratic } from 'pixi.js';
 import { DropShadowFilter, OutlineFilter } from "pixi-filters"
 import Camera from './game-objects/Camera';
 import { DataEventData, PeerRoom } from './PeerRoom';
@@ -84,6 +84,20 @@ export default class GameManager {
                         this.playersListElement.appendChild(element);
                         console.log(address, 'connected!')
                         if (isHost) this.sync();
+                    }
+                    break;
+                case 'player-disconnected':
+                    if (address !== room.address()) {
+                        const player = this.players.get(address);
+                        if (player) {
+                            player.hand?.setPlayer(null);
+                            this.players.delete(address);
+                        }
+                        const playerElement = gm.playersListElement.querySelector<HTMLDivElement>(`div[address=${address}]`);
+                        if (playerElement) playerElement.remove();
+                        const cursor = camera.children.find((child) => child.label === address);
+                        if (cursor) cursor.destroy();
+                        console.log(address, 'disconnected!')
                     }
                     break;
                 case 'sync-objects':
