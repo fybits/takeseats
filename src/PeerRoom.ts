@@ -51,6 +51,7 @@ export class PeerRoom {
         dc.on('open', () => {
             this.members.push(dc);
             dc.send({ type: 'members-list', message: this.members.map((m) => m.peer).filter(p => p !== dc.peer) });
+            console.log('sending members', this.members)
             this.emit(dc.peer, { type: 'announce', message: dc.peer });
         });
 
@@ -61,6 +62,7 @@ export class PeerRoom {
 
         dc.on('data', ((data: DataEventData) => {
             if (data.type === 'members-list') {
+                console.log('received members', data.message)
                 data.message.forEach((peer) => {
                     if (!this.members.some(m => m.peer === peer)) {
                         const dc = this.peer.connect(peer);
