@@ -37,7 +37,13 @@ export class PeerRoom {
     private listeners: ((address: string, data: DataEventData) => void)[] = []
 
     constructor(private userId: string) {
-        this.peer = new Peer(userId, { host: 'takeseats.ru', port: 9000, path: '/takeseats', secure: false });
+        this.peer = new Peer(userId, {
+            host: 'takeseats.ru', port: 9000, path: '/takeseats', secure: false, config: {
+                iceServers: [
+                    { url: 'stun:stun.l.google.com:19302' },
+                ],
+            },
+        });
         this.peer.on('error', (err) => { console.error(`${err.name}: ${err.message} [${err.type}]`) })
         this.peer.on('connection', (member) => this.addDataConnectionEventHandlers(member));
         window.addEventListener('beforeunload', this.unloadListener)
