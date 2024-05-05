@@ -58,6 +58,7 @@ export class PeerRoom {
             this.members.push(dc);
             dc.send({ type: 'members-list', message: this.members.map((m) => m.peer).filter(p => p !== dc.peer) });
             console.log('sending members', this.members)
+            this.connectToMember(dc.peer);
             this.emit(dc.peer, { type: 'announce', message: dc.peer });
         });
 
