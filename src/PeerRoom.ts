@@ -59,8 +59,10 @@ export class PeerRoom {
             dc.send({ type: 'members-list', message: this.members.map((m) => m.peer).filter(p => p !== dc.peer) });
             console.log('sending members', this.members)
             dc.on('iceStateChanged', (state) => {
-                const bakcConnection = this.peer.connect(dc.peer);
-                this.addDataConnectionEventHandlers(bakcConnection);
+                if (state === 'disconnected') {
+                    const bakcConnection = this.peer.connect(dc.peer);
+                    this.addDataConnectionEventHandlers(bakcConnection);
+                }
             });
             this.emit(dc.peer, { type: 'announce', message: dc.peer });
         });
