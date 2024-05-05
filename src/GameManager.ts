@@ -70,7 +70,7 @@ export default class GameManager {
         element.textContent = room.address();
         element.setAttribute('address', this.room.address());
         this.playersListElement.appendChild(element);
-
+        console.log('isHost', isHost)
         room.on("message", (address, { type, message }) => {
             if (address !== room.address()) {
                 console.log(type)
@@ -491,6 +491,14 @@ export default class GameManager {
             }
         })
 
+        this.app.stage.on('pointermove', () => {
+            this.room.send({
+                type: 'player-cursor', message: {
+                    position: this.camera.screenToWorldPoint(Controls.instance.mouse.position),
+                }
+            })
+        })
+
         this.app.stage.eventMode = 'dynamic';
         this.app.stage.hitArea = this.app.screen;
 
@@ -661,12 +669,6 @@ export default class GameManager {
                     }
                 }
             }
-            this.room.send({
-                type: 'player-cursor', message: {
-                    position: this.camera.screenToWorldPoint(Controls.instance.mouse.position),
-                }
-            })
-
             input.rotate(-this.camera.rotation);
             this.camera.desiredPosition.x += input.x * ticker.deltaTime * 20;
             this.camera.desiredPosition.y += input.y * ticker.deltaTime * 20;
