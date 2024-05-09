@@ -26,6 +26,10 @@ canvas {
         pointer-events: all;
     }
 
+    fieldset {
+        margin-top: 1rem;
+    }
+
     #players-list {
         position: absolute;
         top: 0;
@@ -129,5 +133,9 @@ canvas {
         margin: auto;
         width: 250px;
         transform: translate(-50%, -50%);
+    }
+
+    #card-dialog {
+        width: 360px;
     }
 }

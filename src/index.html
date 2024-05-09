@@ -39,6 +39,29 @@
                 <br>
                 <input type="file" name="back" />
             </div>
+            <fieldset class="field">
+                <legend>Size</legend>
+                <div id="card-size-options">
+                    <input id="card-size-default" type="radio" name="card-size" value="default" checked />
+                    <label for="card-size-default">Card (200x280)</label>
+                    <input id="card-size-image" type="radio" name="card-size" value="image" />
+                    <label for="card-size-image">Image Size</label>
+                    <input id="card-size-custom" type="radio" name="card-size" value="custom" />
+                    <label for="card-size-custom">Custom</label>
+                </div>
+                <div id="card-size-custom-values" hidden>
+                    <div class="field">
+                        <label>Width</label>
+                        <br>
+                        <input type="number" name="width" />
+                    </div>
+                    <div class="field">
+                        <label>Height</label>
+                        <br>
+                        <input type="number" name="height" />
+                    </div>
+                </div>
+            </fieldset>
             <button class="submit" type="submit" id="create-card">Create</button>
         </form>
         <form id="deck-dialog" class="dialog" hidden>

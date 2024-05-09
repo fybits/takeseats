@@ -15,17 +15,25 @@ export default class Card extends GameObject implements IDraggable, IStackable, 
     stack: (GameObject & IStackable) | null;
     isFlipped: boolean;
     canStack: boolean;
+    cardWidth: number;
+    cardHeight: number;
 
-    constructor(face: Texture, back: Texture) {
+    constructor(face: Texture, back: Texture, width = 200, height = 280, borderRadius = 10) {
         super();
         this.face = face;
         this.back = back;
         this.stack = null;
-        this.currentGraphics = new Sprite({ texture: face, width: 200, height: 280 });
+        this.cardWidth = width;
+        this.cardHeight = height;
+        if (this.cardWidth === -1 && this.cardHeight === -1) {
+            this.currentGraphics = new Sprite({ texture: face, width: this.face.width, height: this.face.height });
+        } else {
+            this.currentGraphics = new Sprite({ texture: face, width: this.cardWidth, height: this.cardHeight });
+        }
         this.currentGraphics.anchor.x = 0.5;
         this.currentGraphics.anchor.y = 0.5;
         this.canStack = true;
-        const mask = new Graphics().roundRect(-this.currentGraphics.width / 2, -this.currentGraphics.height / 2, this.currentGraphics.width, this.currentGraphics.height, 10).fill(0xfff);
+        const mask = new Graphics().roundRect(-this.currentGraphics.width / 2, -this.currentGraphics.height / 2, this.currentGraphics.width, this.currentGraphics.height, borderRadius).fill(0xfff);
         this.addChild(mask);
         this.currentGraphics.mask = mask;
         this.addChild(this.currentGraphics);
@@ -66,8 +74,16 @@ export default class Card extends GameObject implements IDraggable, IStackable, 
             this.currentGraphics.texture = this.back;
             this.isFlipped = true;
         }
-        this.currentGraphics.width = 200;
-        this.currentGraphics.height = 280;
+        if (this.cardWidth === -1) {
+            this.currentGraphics.width = this.currentGraphics.texture.width;
+        } else {
+            this.currentGraphics.width = this.cardWidth;
+        }
+        if (this.cardHeight === -1) {
+            this.currentGraphics.height = this.currentGraphics.texture.height;
+        } else {
+            this.currentGraphics.height = this.cardHeight;
+        }
     }
 
     getItems(): (GameObject & IStackable)[] {
@@ -118,7 +134,15 @@ export default class Card extends GameObject implements IDraggable, IStackable, 
         this.face = GetTexture(this.face.label!);
         this.back = GetTexture(this.back.label!);
         this.currentGraphics.texture = GetTexture(this.currentGraphics.texture.label!);
-        this.currentGraphics.width = 200;
-        this.currentGraphics.height = 280;
+        if (this.cardWidth === -1) {
+            this.currentGraphics.width = this.currentGraphics.texture.width;
+        } else {
+            this.currentGraphics.width = this.cardWidth;
+        }
+        if (this.cardHeight === -1) {
+            this.currentGraphics.height = this.currentGraphics.texture.height;
+        } else {
+            this.currentGraphics.height = this.cardHeight;
+        }
     }
 }

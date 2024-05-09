@@ -6,6 +6,7 @@ import Camera from './game-objects/Camera';
 import GameManager from './GameManager';
 import Card from './game-objects/Card';
 import Stack from './game-objects/Stack';
+import { Vector } from './utils/Vector';
 
 declare global {
     var gm: GameManager;
@@ -111,12 +112,20 @@ export const GetTexture = (key: string) => {
         cardBtn.addEventListener('click', () => {
             createCardForm.hidden = false;
         });
+        const cardSizeToggle = document.querySelectorAll<HTMLInputElement>('#card-size-options > input')!;
+        const customSizeValuesDiv = document.querySelector<HTMLInputElement>('#card-size-custom-values')!;
+
+        const cardSizeToggleHandler = (event: Event) => {
+            customSizeValuesDiv.hidden = (event.target as HTMLInputElement).value !== 'custom';
+        };
+        cardSizeToggle.forEach((input) => input.addEventListener('change', cardSizeToggleHandler))
+
         createCardForm.onsubmit = async (e) => {
             e.preventDefault();
             const formData = new FormData(createCardForm);
             const faceFile = formData.get('face') as File;
             const backFile = formData.get('back') as File;
-
+            console.log(Array.from(formData.entries()))
             let itemsToSend: Extract<DataEventData, { type: 'sync-resources' }>['message'] | null = null;
             if (!(Assets.cache.has(faceFile.name) && Assets.cache.has(backFile.name))) {
                 const [faceUrl, backUrl] = await Promise.all([getBase64(faceFile), getBase64(backFile)]);
@@ -125,7 +134,24 @@ export const GetTexture = (key: string) => {
                 await Assets.load<Texture>([faceFile.name, backFile.name]);
                 itemsToSend = [{ alias: faceFile.name, src: faceUrl }, { alias: backFile.name, src: backUrl }];
             }
-            const card = new Card(GetTexture(faceFile.name), GetTexture(backFile.name));
+            const cardSize = formData.get('card-size');
+            const size = new Vector();
+            switch (cardSize) {
+                case 'image':
+                    size.x = -1;
+                    size.y = -1;
+                    break;
+                case 'custom':
+                    size.x = +(formData.get('width') || 200);
+                    size.y = +(formData.get('height') || 280);
+                    break
+                case 'default':
+                default:
+                    size.x = 200;
+                    size.y = 280;
+                    break;
+            }
+            const card = new Card(GetTexture(faceFile.name), GetTexture(backFile.name), size.x, size.y);
             gameManager.camera.addChild(card);
             gameManager.sync();
             if (itemsToSend) {
