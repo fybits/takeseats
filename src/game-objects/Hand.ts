@@ -111,12 +111,12 @@ export default class Hand extends Container implements IUpdatable {
             card.canStack = false;
             card.angle = this.angle;
             if (this.hidden && card.currentGraphics.texture !== card.back) {
-                card.currentGraphics.texture = card.back;
+                card.hide()
             }
         } else {
             card.canStack = true;
             if (!card.isFlipped) {
-                card.currentGraphics.texture = card.face;
+                card.show();
             }
         }
     }
@@ -168,7 +168,7 @@ export default class Hand extends Container implements IUpdatable {
                 card.desiredPosition.y = this.handHeight / 2;
             }
             if (this.hidden && card.currentGraphics.texture !== card.back) {
-                card.currentGraphics.texture = card.back;
+                card.hide()
             }
             card.update(dt);
         }

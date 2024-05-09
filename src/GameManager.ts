@@ -34,6 +34,8 @@ export type SerializedObject = {
     back: string;
     isFlipped: boolean;
     inStack: boolean;
+    width: number;
+    height: number;
 } | {
     type: 'stack';
     items: number[],
@@ -108,7 +110,7 @@ export default class GameManager {
                         message.gameObjects.sort((a, b) => a.type.localeCompare(b.type))
                         for (let obj of message.gameObjects) {
                             if (obj.type === 'card') {
-                                const card = new Card(GetTexture(obj.face), GetTexture(obj.back));
+                                const card = new Card(GetTexture(obj.face), GetTexture(obj.back), obj.width, obj.height);
                                 card.x = obj.x;
                                 card.y = obj.y;
                                 card.desiredPosition.x = obj.x;

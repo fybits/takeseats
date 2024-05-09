@@ -239,12 +239,6 @@ export const GetTexture = (key: string) => {
             }
             gameManager.camera.addChild(new Stack(cards));
             gameManager.sync();
-            // if (itemsToSend) {
-            //     room?.send({
-            //         type: 'sync-resources',
-            //         message: itemsToSend,
-            //     })
-            // }
         }
         globalThis.gm = gameManager;
 
