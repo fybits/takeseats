@@ -110,13 +110,12 @@ canvas {
         }
 
         button.submit {
-            margin-top: 1rem;
             cursor: pointer;
             background-color: #1c851c;
             border-color: transparent;
             border-radius: 4px;
             padding: 4px 16px;
-            font-size: 1.5rem;
+            font-size: 1.2rem;
             color: white;
 
             &:hover {
@@ -135,9 +134,18 @@ canvas {
         left: 50%;
         top: 50%;
         margin: auto;
-        width: 250px;
+        width: 300px;
         transform: translate(-50%, -50%);
+
+        .dialog-actions {
+            margin-top: 1rem;
+            display: flex;
+            flex-direction: row;
+            justify-content: end;
+            gap: 8px;
+        }
     }
+
 
     #card-dialog {
         width: 360px;

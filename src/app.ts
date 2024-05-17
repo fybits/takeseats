@@ -28,6 +28,7 @@ const joinBtn = document.querySelector<HTMLButtonElement>('button#join')!;
 
 const createCardForm = document.querySelector<HTMLFormElement>('#card-dialog')!;
 const createDeckForm = document.querySelector<HTMLFormElement>('#deck-dialog')!;
+const saveTableForm = document.querySelector<HTMLFormElement>('#save-dialog')!;
 
 const closeBtns = document.querySelectorAll<HTMLInputElement>('.close');
 closeBtns.forEach((btn) => {
@@ -115,6 +116,17 @@ export const GetTexture = (key: string) => {
         const saveBtn = document.querySelector<HTMLButtonElement>("#save-btn")!;
         saveBtn.hidden = false;
         saveBtn.addEventListener('click', async () => {
+            saveTableForm.hidden = false;
+            return;
+        });
+
+        saveTableForm.addEventListener('submit', (e) => {
+            console.log(e);
+            e.preventDefault();
+            const formData = new FormData(saveTableForm);
+            const name = formData.get('name');
+            const isPackingTextures = formData.get('pack-textures') === 'on';
+            console.log(isPackingTextures)
 
             const objectSerialized: SerializedObject[] = [];
             const aliasesToSave: Set<string> = new Set<string>();
@@ -144,74 +156,95 @@ export const GetTexture = (key: string) => {
 
             for (let obj of gameManager.gameObjects.values()) {
                 objectSerialized.push(obj.serialize());
-                if (obj instanceof Card) {
-                    getTexture(obj.face);
-                    getTexture(obj.back);
-                } else {
-                    getTexture(obj.currentGraphics.texture);
+                if (isPackingTextures) {
+                    if (obj instanceof Card) {
+                        getTexture(obj.face);
+                        getTexture(obj.back);
+                    } else {
+                        getTexture(obj.currentGraphics.texture);
+                    }
                 }
             }
             const zip = new JSZip();
-            const texturesFolder = zip.folder('textures');
-            textures.forEach((texture) => {
-                texturesFolder?.file(texture.alias, texture.src.replace(/^data:image\/?[A-z]*;base64,/, ''), { base64: true });
-                if (texture.spritesheetData) {
-                    texturesFolder?.file(`${texture.alias}.json`, JSON.stringify(texture.spritesheetData));
-                }
-            });
+            if (isPackingTextures) {
+                const texturesFolder = zip.folder('textures');
+                textures.forEach((texture) => {
+                    texturesFolder?.file(texture.alias, texture.src.replace(/^data:image\/?[A-z]*;base64,/, ''), { base64: true });
+                    if (texture.spritesheetData) {
+                        texturesFolder?.file(`${texture.alias}.json`, JSON.stringify(texture.spritesheetData));
+                    }
+                });
+            }
 
-            zip.file('hands.json', JSON.stringify(gameManager.hands.map((hand) => ({ player: hand.player, items: hand.items.map(item => item.id) }))));
+            zip.file('hands.json', JSON.stringify(gameManager.hands.map((hand) => ({ player: null, items: hand.items.map(item => item.id) }))));
             zip.file('objects.json', JSON.stringify(objectSerialized));
             zip.file('next-uid.txt', '' + currentID);
-            zip.generateAsync({ type: "blob", compression: 'DEFLATE' }).then(function (content) {
-                saveAs(content, 'save000.zip');
+            zip.file('meta.json', JSON.stringify({ timestamp: Date.now(), namespace: name }))
+            zip.generateAsync({ type: "blob", compression: 'DEFLATE' }).then(async (content) => {
+                if (e.submitter!.id === 'save-table-to-disk') {
+                    saveAs(content, `${name}.zip`);
+                } else {
+                    const storageRoot = await navigator.storage.getDirectory();
+                    const saveFile = await storageRoot.getFileHandle(`${name}.zip`, { create: true });
+                    const stream = await saveFile.createWritable();
+                    try {
+                        await stream.write(content);
+                    } finally {
+                        await stream.close();
+                    }
+                }
             });
-        });
+        })
 
         const loadBtn = document.querySelector<HTMLButtonElement>("#load-btn")!;
         loadBtn.hidden = false;
         loadBtn.addEventListener('click', async () => {
-            let input = document.createElement('input');
-            input.type = 'file';
-            input.accept = ".zip";
-            input.onchange = async _ => {
-                if (input.files) {
-                    const zipFile = input.files[0];
-                    const zip = new JSZip();
-                    const zipObject = await zip.loadAsync(await zipFile.arrayBuffer(), { createFolders: true });
-                    const textureAliases: string[] = [];
-                    const spritesheetsToResolve: { path: string, spriteSheetData: SpritesheetData }[] = [];
-                    const filesTextures: { path: string, file: JSZipObject }[] = [];
-                    zipObject.folder('textures')!.forEach((path, file) => filesTextures.push({ path, file }));
-                    for (const { path, file } of filesTextures) {
-                        if (path.endsWith('json')) {
-                            spritesheetsToResolve.push({ path, spriteSheetData: JSON.parse(await file.async('string')) })
-                        } else {
-                            const src = await getDataURL(await file.async('blob'));
-                            textureAliases.push(path);
-                            Assets.add({ alias: path, src: src })
-                        }
-                    }
-                    await Assets.load(textureAliases);
-                    spritesheetsToResolve.forEach(async ({ path, spriteSheetData }) => {
-                        const alias = path.replace('.json', '');
-                        const texture = GetTexture(alias);
-                        const spritesheet = new Spritesheet(texture, spriteSheetData);
-                        await spritesheet.parse();
-                        Assets.cache.set(`${alias}-sheet`, spritesheet);
-                    });
-                    const gameObjects = JSON.parse(await zipObject.file('objects.json')!.async('string'));
-                    const hands = JSON.parse(await zipObject.file('hands.json')!.async('string'));
-                    const nextUID = +(await zipObject.file('next-uid.txt')!.async('string'));
-                    gameManager.syncObjects({
-                        gameObjects,
-                        nextUID,
-                        hands,
-                    })
-                }
+            // let input = document.createElement('input');
+            // input.type = 'file';
+            // input.accept = ".zip";
+            // input.onchange = async _ => {
+            //     if (input.files) {
+            //         const zipFile = input.files[0];
 
-            };
-            input.click();
+            const storageRoot = await navigator.storage.getDirectory();
+            const saveFile = await storageRoot.getFileHandle('save.zip');
+            const zipFile = await saveFile.getFile()
+            const zip = new JSZip();
+            const zipObject = await zip.loadAsync(await zipFile.arrayBuffer(), { createFolders: true });
+            const textureAliases: string[] = [];
+            const spritesheetsToResolve: { path: string, spriteSheetData: SpritesheetData }[] = [];
+            const filesTextures: { path: string, file: JSZipObject }[] = [];
+            zipObject.folder('textures')!.forEach((path, file) => filesTextures.push({ path, file }));
+            for (const { path, file } of filesTextures) {
+                if (path.endsWith('json')) {
+                    spritesheetsToResolve.push({ path, spriteSheetData: JSON.parse(await file.async('string')) })
+                } else {
+                    const src = await getDataURL(await file.async('blob'));
+                    textureAliases.push(path);
+                    Assets.add({ alias: path, src: src })
+                }
+            }
+            await Assets.load(textureAliases);
+            spritesheetsToResolve.forEach(async ({ path, spriteSheetData }) => {
+                const alias = path.replace('.json', '');
+                const texture = GetTexture(alias);
+                const spritesheet = new Spritesheet(texture, spriteSheetData);
+                await spritesheet.parse();
+                Assets.cache.set(`${alias}-sheet`, spritesheet);
+            });
+            const gameObjects = JSON.parse(await zipObject.file('objects.json')!.async('string'));
+            const hands = JSON.parse(await zipObject.file('hands.json')!.async('string'));
+            const nextUID = +(await zipObject.file('next-uid.txt')!.async('string'));
+            gameManager.syncObjects({
+                gameObjects,
+                nextUID,
+                hands,
+            });
+            gameManager.sync();
+            // }
+
+            // };
+            // input.click();
         });
 
         const cardBtn = document.querySelector<HTMLButtonElement>("#create-card-btn")!;

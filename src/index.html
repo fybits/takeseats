@@ -62,7 +62,9 @@
                     </div>
                 </div>
             </fieldset>
-            <button class="submit" type="submit" id="create-card">Create</button>
+            <div class="dialog-actions">
+                <button class="submit" type="submit" id="create-card">Create</button>
+            </div>
         </form>
         <form id="deck-dialog" class="dialog" hidden>
             <input type="button" value="x" class="close" style="float: right"></input>
@@ -97,7 +99,28 @@
                 <br>
                 <input type="file" name="back" />
             </div>
-            <button class="submit" type="submit" id="create-deck">Create</button>
+            <div class="dialog-actions">
+                <button class="submit" type="submit" id="create-deck">Create</button>
+            </div>
+        </form>
+
+        <form id="save-dialog" class="dialog" hidden>
+            <input type="button" value="x" class="close" style="float: right"></input>
+            <h2>Save Table</h2>
+            <div class="field">
+                <label>Name</label>
+                <br>
+                <input type="text" name="name" />
+            </div>
+            <div class="field">
+                <label>Pack Textures</label>
+                <br>
+                <input id="pack-textures" type="checkbox" name="pack-textures" />
+            </div>
+            <div class="dialog-actions">
+                <button class="submit" type="submit" id="save-table">Save</button>
+                <button class="submit" type="submit" id="save-table-to-disk">Save to Disk</button>
+            </div>
         </form>
         <div id="toolbar">
             <button hidden id="sync-btn">Sync</button>

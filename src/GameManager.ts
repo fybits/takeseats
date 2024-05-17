@@ -244,9 +244,10 @@ export default class GameManager {
     };
 
     syncObjects(state: { gameObjects: SerializedObject[]; hands: { items: number[]; player: string | null; }[]; nextUID: number; }) {
-        console.log('started syncing objects');
+        console.log('started syncing objects', state);
         this.gameObjects.forEach((i) => i.destroy({ children: true }));
         this.gameObjects.clear();
+        resetUIDs(-100000);
         state.gameObjects.sort((a, b) => a.type.localeCompare(b.type));
         for (let obj of state.gameObjects) {
             if (obj.type === 'card') {

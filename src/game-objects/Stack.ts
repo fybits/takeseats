@@ -20,7 +20,16 @@ export default class Stack extends GameObject implements IDraggable, IStackable,
     constructor(items: (GameObject & IStackable)[]) {
         super();
         this.items = items;
-        this.items.forEach((i) => i.stack = this);
+        console.log(items)
+        this.items.forEach((i) => {
+            try {
+                i.stack = this
+
+            } catch (e) {
+                console.log('item', i)
+                throw e;
+            }
+        });
         this.eventMode = 'dynamic';
         this.addFilter('deck-details', new DropShadowFilter({ offset: { x: 0, y: this.items.length * 2 * gm.camera.scale.x }, color: 0xcccccc, blur: 0, alpha: 1 }));
         this.canStack = true;
