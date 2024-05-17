@@ -17,11 +17,15 @@
   "license": "ISC",
   "devDependencies": {
     "@parcel/transformer-sass": "2.12.0",
+    "@types/file-saver": "^2.0.7",
+    "buffer": "^5.5.0||^6.0.0",
     "gh-pages": "^6.1.1",
     "parcel": "^2.12.0",
     "process": "^0.11.10"
   },
   "dependencies": {
+    "file-saver": "^2.0.5",
+    "jszip": "^3.10.1",
     "peerjs": "^1.5.2",
     "pixi-filters": "^6.0.0",
     "pixi.js": "^8.0.5"

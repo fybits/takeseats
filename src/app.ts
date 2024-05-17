@@ -3,10 +3,13 @@ import { Application, Assets, Spritesheet, SpritesheetData, Texture, autoDetectR
 import { DataEventData, PeerRoom } from './PeerRoom';
 import Controls from './Controls';
 import Camera from './game-objects/Camera';
-import GameManager from './GameManager';
+import GameManager, { SerializedObject } from './GameManager';
 import Card from './game-objects/Card';
 import Stack from './game-objects/Stack';
 import { Vector } from './utils/Vector';
+import { currentID } from './utils/uniqueID';
+import JSZip from 'jszip';
+import { saveAs } from 'file-saver';
 
 declare global {
     var gm: GameManager;
@@ -105,7 +108,63 @@ export const GetTexture = (key: string) => {
 
         const syncBtn = document.querySelector<HTMLButtonElement>("#sync-btn")!;
         syncBtn.hidden = false;
-        syncBtn.addEventListener('click', () => gameManager.sync())
+        syncBtn.addEventListener('click', async () => gameManager.sync());
+
+        const saveBtn = document.querySelector<HTMLButtonElement>("#save-btn")!;
+        saveBtn.hidden = false;
+        saveBtn.addEventListener('click', async () => {
+
+            const objectSerialized: SerializedObject[] = [];
+            const aliasesToSave: Set<string> = new Set<string>();
+            const textures: { alias: string, spritesheetData?: SpritesheetData, src: string }[] = [];
+
+            const getTexture = (texture: Texture) => {
+                const isSpritesheetMatch = texture.label!.match(/(.+)-\d+$/);
+                if (isSpritesheetMatch) {
+                    if (!aliasesToSave.has(`${isSpritesheetMatch[1]}-sheet`)) {
+                        aliasesToSave.add(`${isSpritesheetMatch[1]}-sheet`);
+                        const spritesheet = Assets.get<Spritesheet>(`${isSpritesheetMatch[1]}-sheet`);
+                        textures.push({
+                            alias: `${isSpritesheetMatch[1]}-sheet`,
+                            spritesheetData: spritesheet.data,
+                            src: texture.source.label,
+                        });
+                    }
+                } else {
+                    if (!aliasesToSave.has(texture.label!)) {
+                        textures.push({
+                            alias: texture.label!,
+                            src: texture.source.label,
+                        });
+                    }
+                }
+            }
+
+            for (let obj of gameManager.gameObjects.values()) {
+                objectSerialized.push(obj.serialize());
+                if (obj instanceof Card) {
+                    getTexture(obj.face);
+                    getTexture(obj.back);
+                } else {
+                    getTexture(obj.currentGraphics.texture);
+                }
+            }
+            const zip = new JSZip()
+            const texturesFolder = zip.folder('textures');
+            textures.forEach((texture) => {
+                texturesFolder?.file(texture.alias, texture.src.replace(/^data:image\/?[A-z]*;base64,/, ''), { base64: true });
+                if (texture.spritesheetData) {
+                    texturesFolder?.file(`${texture.alias}.json`, JSON.stringify(texture.spritesheetData));
+                }
+            });
+
+            zip.file('hands.json', JSON.stringify(gameManager.hands.map((hand) => ({ player: hand.player, items: hand.items.map(item => item.id) }))));
+            zip.file('objects.json', JSON.stringify(objectSerialized));
+            zip.file('next-uid.txt', '' + currentID);
+            zip.generateAsync({ type: "blob", compression: 'DEFLATE' }).then(function (content) {
+                saveAs(content, 'save000.zip');
+            });
+        });
 
         const cardBtn = document.querySelector<HTMLButtonElement>("#create-card-btn")!;
         cardBtn.hidden = false;

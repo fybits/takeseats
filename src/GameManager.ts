@@ -444,8 +444,6 @@ export default class GameManager {
                         hand.putCardAt(item as Card, hand.items.length)
                     }
                 }
-                // this.hand.addChild(this.target);
-                // this.target.desiredPosition.y = 0;
             }
         }
     }
