@@ -107,6 +107,7 @@ export const GetTexture = (key: string) => {
         lobbyControlsContainer.hidden = true;
         const gameManager = new GameManager(app, camera, room, isHost);
 
+        //#region ui
         const syncBtn = document.querySelector<HTMLButtonElement>("#sync-btn")!;
         syncBtn.hidden = false;
         syncBtn.addEventListener('click', async () => gameManager.sync());
@@ -339,6 +340,8 @@ export const GetTexture = (key: string) => {
             gameManager.camera.addChild(new Stack(cards));
             gameManager.sync();
         }
+        //#endregion ui
+
         globalThis.gm = gameManager;
 
         gameManager.startGame();

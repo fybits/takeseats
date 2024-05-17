@@ -47,7 +47,7 @@ export default class Hand extends Container implements IUpdatable {
         this.zIndex = 0;
         this.itemsContainer = new Container();
         this.itemsContainer.label = 'hand_container';
-        const dropShadowFilter = new DropShadowFilter({ blur: 16, offset: { x: 8, y: 40 }, pixelSize: { x: 1, y: 1 }, quality: 100 });
+        const dropShadowFilter = new DropShadowFilter({ blur: 16, offset: { x: 6, y: 32 }, pixelSize: { x: 1, y: 1 }, quality: 8 });
         dropShadowFilter.antialias = 'on';
         this.itemsContainer.filters = [dropShadowFilter];
         this.addChild(this.itemsContainer);
