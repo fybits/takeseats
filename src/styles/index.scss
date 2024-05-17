@@ -46,6 +46,12 @@ canvas {
         display: flex;
         user-select: none;
 
+        hr {
+            margin: 0;
+            border-color: rgba(0, 0, 0, 0.3);
+            border-style: solid;
+        }
+
         button {
             background-color: #18181821;
             border: none;

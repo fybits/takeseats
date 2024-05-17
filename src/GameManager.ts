@@ -104,49 +104,7 @@ export default class GameManager {
                     break;
                 case 'sync-objects':
                     if (address !== room.address()) {
-                        console.log('started syncing objects')
-                        this.gameObjects.forEach((i) => i.destroy({ children: true }));
-                        this.gameObjects.clear();
-                        message.gameObjects.sort((a, b) => a.type.localeCompare(b.type))
-                        for (let obj of message.gameObjects) {
-                            if (obj.type === 'card') {
-                                const card = new Card(GetTexture(obj.face), GetTexture(obj.back), obj.width, obj.height);
-                                card.x = obj.x;
-                                card.y = obj.y;
-                                card.desiredPosition.x = obj.x;
-                                card.desiredPosition.y = obj.y;
-                                card.angle = obj.angle;
-                                this.gameObjects.delete(card.id);
-                                card.id = obj.id;
-                                this.gameObjects.set(card.id, card);
-                                if (obj.isFlipped) card.flip();
-                                if (!obj.inStack) this.camera.addChild(card);
-                            }
-                            if (obj.type === 'stack') {
-                                const cards = obj.items.map((i) => this.gameObjects.get(i)) as (GameObject & IStackable)[];
-                                const stack = new Stack(cards);
-                                stack.x = obj.x;
-                                stack.y = obj.y;
-                                stack.desiredPosition.x = obj.x;
-                                stack.desiredPosition.y = obj.y;
-                                stack.angle = obj.angle;
-                                this.gameObjects.delete(stack.id);
-                                stack.id = obj.id;
-                                this.gameObjects.set(stack.id, stack);
-                                stack.id = obj.id;
-                                this.camera.addChild(stack);
-                            }
-                        }
-                        for (let i = 0; i < message.hands.length; i++) {
-                            const hand = message.hands[i];
-                            this.hands[i].setPlayer(hand.player);
-                            for (let cardIndex = 0; cardIndex < hand.items.length; cardIndex++) {
-                                const card = this.gameObjects.get(hand.items[cardIndex]);
-                                if (card && card instanceof Card)
-                                    this.hands[i].putCardAt(card, cardIndex);
-                            }
-                        }
-                        resetUIDs(message.nextUID);
+                        this.syncObjects(message);
                     }
                     break;
                 case 'player-cursor':
@@ -284,6 +242,52 @@ export default class GameManager {
             }
         });
     };
+
+    syncObjects(state: { gameObjects: SerializedObject[]; hands: { items: number[]; player: string | null; }[]; nextUID: number; }) {
+        console.log('started syncing objects');
+        this.gameObjects.forEach((i) => i.destroy({ children: true }));
+        this.gameObjects.clear();
+        state.gameObjects.sort((a, b) => a.type.localeCompare(b.type));
+        for (let obj of state.gameObjects) {
+            if (obj.type === 'card') {
+                const card = new Card(GetTexture(obj.face), GetTexture(obj.back), obj.width, obj.height);
+                card.x = obj.x;
+                card.y = obj.y;
+                card.desiredPosition.x = obj.x;
+                card.desiredPosition.y = obj.y;
+                card.angle = obj.angle;
+                this.gameObjects.delete(card.id);
+                card.id = obj.id;
+                this.gameObjects.set(card.id, card);
+                if (obj.isFlipped) card.flip();
+                if (!obj.inStack) this.camera.addChild(card);
+            }
+            if (obj.type === 'stack') {
+                const cards = obj.items.map((i) => this.gameObjects.get(i)) as (GameObject & IStackable)[];
+                const stack = new Stack(cards);
+                stack.x = obj.x;
+                stack.y = obj.y;
+                stack.desiredPosition.x = obj.x;
+                stack.desiredPosition.y = obj.y;
+                stack.angle = obj.angle;
+                this.gameObjects.delete(stack.id);
+                stack.id = obj.id;
+                this.gameObjects.set(stack.id, stack);
+                stack.id = obj.id;
+                this.camera.addChild(stack);
+            }
+        }
+        for (let i = 0; i < state.hands.length; i++) {
+            const hand = state.hands[i];
+            this.hands[i].setPlayer(hand.player);
+            for (let cardIndex = 0; cardIndex < hand.items.length; cardIndex++) {
+                const card = this.gameObjects.get(hand.items[cardIndex]);
+                if (card && card instanceof Card)
+                    this.hands[i].putCardAt(card, cardIndex);
+            }
+        }
+        resetUIDs(state.nextUID);
+    }
 
     sync() {
         const objectSerialized: SerializedObject[] = [];
