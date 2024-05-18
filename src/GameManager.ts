@@ -562,22 +562,15 @@ export default class GameManager {
             if (Controls.instance.keyboard.get('d') === KeyState.HELD)
                 input.x += 1;
 
+            const currentTarget = this.dragTarget || this.target;
 
             if (Controls.instance.keyboard.get('f') === KeyState.PRESSED) {
-                if (this.dragTarget && isIFlipable(this.dragTarget)) {
-                    this.dragTarget.flip();
+                if (currentTarget && isIFlipable(currentTarget)) {
+                    currentTarget.flip();
                     this.room.send({
                         type: 'flip-object',
                         message: {
-                            target: this.dragTarget.id,
-                        }
-                    })
-                } else if (this.target && isIFlipable(this.target)) {
-                    this.target.flip();
-                    this.room.send({
-                        type: 'flip-object',
-                        message: {
-                            target: this.target.id,
+                            target: currentTarget.id,
                         }
                     })
                 }
@@ -587,21 +580,12 @@ export default class GameManager {
                 const seed = Date.now();
                 const randSeeded = rand(seed);
 
-                if (this.dragTarget && isIRollable(this.dragTarget)) {
-                    this.dragTarget.roll(randSeeded);
+                if (currentTarget && isIRollable(currentTarget)) {
+                    currentTarget.roll(randSeeded);
                     this.room.send({
                         type: 'roll-object',
                         message: {
-                            target: this.dragTarget.id,
-                            seed: seed,
-                        }
-                    })
-                } else if (this.target && isIRollable(this.target)) {
-                    this.target.roll(randSeeded);
-                    this.room.send({
-                        type: 'roll-object',
-                        message: {
-                            target: this.target.id,
+                            target: currentTarget.id,
                             seed: seed,
                         }
                     })
@@ -615,13 +599,9 @@ export default class GameManager {
                 angle += 1;
 
             if (Controls.instance.keyboard.get('alt') === KeyState.HELD) {
-                if (this.dragTarget) {
-                    this.peekView.texture = this.dragTarget.currentGraphics.texture;
-                    this.peekView.width = this.dragTarget.currentGraphics.width / this.dragTarget.currentGraphics.height * this.app.screen.height / 2;
-                    this.peekView.height = this.app.screen.height / 2;
-                } else if (this.target) {
-                    this.peekView.texture = this.target.currentGraphics.texture;
-                    this.peekView.width = this.target.currentGraphics.width / this.target.currentGraphics.height * this.app.screen.height / 2;
+                if (currentTarget) {
+                    this.peekView.texture = currentTarget.currentGraphics.texture;
+                    this.peekView.width = currentTarget.currentGraphics.width / currentTarget.currentGraphics.height * this.app.screen.height / 2;
                     this.peekView.height = this.app.screen.height / 2;
                 }
                 this.peekView.scale.x = this.peekViewZoom;
@@ -667,22 +647,13 @@ export default class GameManager {
                 if (Controls.instance.keyboard.get('shift') === KeyState.HELD) {
                     this.camera.angle -= angle * ticker.deltaTime;
                 } else {
-                    if (this.dragTarget) {
-                        this.dragTarget.angle += angle * ticker.deltaTime * 2;
+                    if (currentTarget) {
+                        currentTarget.angle += angle * ticker.deltaTime * 2;
                         this.room.send({
                             type: 'rotate-object',
                             message: {
-                                target: this.dragTarget.id,
-                                angle: this.dragTarget.angle,
-                            }
-                        });
-                    } else if (this.target) {
-                        this.target.angle += angle * ticker.deltaTime * 2;
-                        this.room.send({
-                            type: 'rotate-object',
-                            message: {
-                                target: this.target.id,
-                                angle: this.target.angle,
+                                target: currentTarget.id,
+                                angle: currentTarget.angle,
                             }
                         });
                     }
