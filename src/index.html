@@ -26,100 +26,130 @@
                 <button id="join">Join</button>
             </div>
         </div>
-        <form id="card-dialog" class="dialog" hidden>
-            <input type="button" value="x" class="close" style="float: right"></input>
-            <h2>Create Card</h2>
-            <div class="field">
-                <label>Face</label>
-                <br>
-                <input type="file" name="face" />
+        <form id="card-dialog" class="dialog" draggable hidden>
+            <div class="dialog-header">
+                <input type="button" value="x" class="close" style="float: right"></input>
+                <h2>Create Card</h2>
             </div>
-            <div class="field">
-                <label>Back</label>
-                <br>
-                <input type="file" name="back" />
+            <div class="dialog-body">
+                <div class="field">
+                    <label>Face</label>
+                    <br>
+                    <input type="file" name="face" />
+                </div>
+                <div class="field">
+                    <label>Back</label>
+                    <br>
+                    <input type="file" name="back" />
+                </div>
+                <fieldset class="field">
+                    <legend>Size</legend>
+                    <div id="card-size-options">
+                        <input id="card-size-default" type="radio" name="card-size" value="default" checked />
+                        <label for="card-size-default">Card (200x280)</label>
+                        <input id="card-size-image" type="radio" name="card-size" value="image" />
+                        <label for="card-size-image">Image Size</label>
+                        <input id="card-size-custom" type="radio" name="card-size" value="custom" />
+                        <label for="card-size-custom">Custom</label>
+                    </div>
+                    <div id="card-size-custom-values" hidden>
+                        <div class="field">
+                            <label>Width</label>
+                            <br>
+                            <input type="number" name="width" />
+                        </div>
+                        <div class="field">
+                            <label>Height</label>
+                            <br>
+                            <input type="number" name="height" />
+                        </div>
+                    </div>
+                </fieldset>
             </div>
-            <fieldset class="field">
-                <legend>Size</legend>
-                <div id="card-size-options">
-                    <input id="card-size-default" type="radio" name="card-size" value="default" checked />
-                    <label for="card-size-default">Card (200x280)</label>
-                    <input id="card-size-image" type="radio" name="card-size" value="image" />
-                    <label for="card-size-image">Image Size</label>
-                    <input id="card-size-custom" type="radio" name="card-size" value="custom" />
-                    <label for="card-size-custom">Custom</label>
-                </div>
-                <div id="card-size-custom-values" hidden>
-                    <div class="field">
-                        <label>Width</label>
-                        <br>
-                        <input type="number" name="width" />
-                    </div>
-                    <div class="field">
-                        <label>Height</label>
-                        <br>
-                        <input type="number" name="height" />
-                    </div>
-                </div>
-            </fieldset>
             <div class="dialog-actions">
                 <button class="submit" type="submit" id="create-card">Create</button>
             </div>
         </form>
-        <form id="deck-dialog" class="dialog" hidden>
-            <input type="button" value="x" class="close" style="float: right"></input>
-            <h2>Create Deck</h2>
-            <div class="field">
-                <label>Spritesheet</label>
-                <br>
-                <input type="file" name="spritesheet" />
+        <form id="deck-dialog" class="dialog" draggable hidden>
+            <div class="dialog-header">
+                <input type="button" value="x" class="close" style="float: right"></input>
+                <h2>Create Deck</h2>
             </div>
-            <div class="field">
-                <label>Number of Columns</label>
-                <br>
-                <input type="number" name="cols" />
-            </div>
-            <div class="field">
-                <label>Number of Rows</label>
-                <br>
-                <input type="number" name="rows" />
-            </div>
-            <div class="field">
-                <label>Back as separate file</label>
-                <br>
-                <input id="back-separate" type="checkbox" name="back-separate" />
-            </div>
-            <div id="back-index" class="field">
-                <label>Back Index</label>
-                <br>
-                <input type="number" name="back-index" />
-            </div>
-            <div id="back-file" class="field" hidden>
-                <label>Back</label>
-                <br>
-                <input type="file" name="back" />
+            <div class="dialog-body">
+                <div class="field">
+                    <label>Spritesheet</label>
+                    <br>
+                    <input type="file" name="spritesheet" />
+                </div>
+                <div class="field">
+                    <label>Number of Columns</label>
+                    <br>
+                    <input type="number" name="cols" />
+                </div>
+                <div class="field">
+                    <label>Number of Rows</label>
+                    <br>
+                    <input type="number" name="rows" />
+                </div>
+                <div class="field">
+                    <label>Back as separate file</label>
+                    <br>
+                    <input id="back-separate" type="checkbox" name="back-separate" />
+                </div>
+                <div id="back-index" class="field">
+                    <label>Back Index</label>
+                    <br>
+                    <input type="number" name="back-index" />
+                </div>
+                <div id="back-file" class="field" hidden>
+                    <label>Back</label>
+                    <br>
+                    <input type="file" name="back" />
+                </div>
             </div>
             <div class="dialog-actions">
                 <button class="submit" type="submit" id="create-deck">Create</button>
             </div>
         </form>
 
-        <form id="save-dialog" class="dialog" hidden>
-            <input type="button" value="x" class="close" style="float: right"></input>
-            <h2>Save Table</h2>
-            <div class="field">
-                <label>Name</label>
-                <br>
-                <input type="text" name="name" />
+        <form id="save-dialog" class="dialog" draggable hidden>
+            <div class="dialog-header">
+                <input type="button" value="x" class="close" style="float: right"></input>
+                <h2>Save Table</h2>
             </div>
-            <div class="field">
-                <label>Pack Textures</label>
-                <br>
-                <input id="pack-textures" type="checkbox" name="pack-textures" />
+            <div class="dialog-body">
+                <div class="field">
+                    <label>Name</label>
+                    <br>
+                    <input type="text" name="name" />
+                </div>
+                <div class="field">
+                    <label>Pack Textures</label>
+                    <br>
+                    <input id="pack-textures" type="checkbox" name="pack-textures" />
+                </div>
             </div>
             <div class="dialog-actions">
                 <button class="submit" type="submit" id="save-table">Save</button>
                 <button class="submit" type="submit" id="save-table-to-disk">Save to Disk</button>
+            </div>
+        </form>
+        <form id="load-dialog" class="dialog" draggable hidden>
+            <div class="dialog-header">
+                <input type="button" value="x" class="close" style="float: right"></input>
+                <h2>Load Table</h2>
+            </div>
+            <div class="dialog-body">
+                <p>Select save file from list bellow</p>
+                <div id="saves-list" class="list field"></div>
+                <div class="field">
+                    <label>Or choose file from disk</label>
+                    <br>
+                    <input type="file" accept=".zip" name="save-file" />
+                </div>
+            </div>
+            <div class="dialog-actions">
+                <button class="submit" type="submit" id="load-table">Load</button>
             </div>
         </form>
         <div id="toolbar">

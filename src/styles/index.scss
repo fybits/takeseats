@@ -4,6 +4,7 @@ body {
         'Ubuntu', 'Cantarell', 'Fira Sans', 'Droid Sans', 'Helvetica Neue',
         sans-serif;
     color: white;
+    overflow: hidden;
 }
 
 canvas {
@@ -100,10 +101,6 @@ canvas {
     }
 
     .dialog {
-        h2 {
-            margin-top: 0;
-            border-bottom: 1px solid gray;
-        }
 
         .field {
             margin-bottom: 0.2rem;
@@ -129,16 +126,34 @@ canvas {
 
         background-color: #181818;
         border-radius: 10px;
-        padding: 20px;
         position: absolute;
         left: 50%;
         top: 50%;
         margin: auto;
         width: 300px;
         transform: translate(-50%, -50%);
+        box-shadow: 0 10px 20px black;
+
+        .dialog-header {
+            padding: 20px;
+            border-bottom: 1px solid gray;
+            margin-bottom: 1.2rem;
+            cursor: grab;
+            user-select: none;
+
+            h2 {
+                margin: 0;
+            }
+        }
+
+        .dialog-body {
+            padding: 0 20px;
+        }
 
         .dialog-actions {
-            margin-top: 1rem;
+            background-color: #2e2e2e;
+            padding: 20px;
+            margin-top: 1.2rem;
             display: flex;
             flex-direction: row;
             justify-content: end;
@@ -146,8 +161,37 @@ canvas {
         }
     }
 
+    .list {
+        max-height: 40vh;
+        min-height: 200px;
+        margin-right: -10px;
+        overflow-y: auto;
+        scrollbar-width: thin;
+        // scrollbar-gutter: stable;
+        background-color: #424242;
+        border: solid 1px black;
+        border-radius: 4px;
+        padding-bottom: 40px;
+    }
+
+    .save-list-item {
+        display: flex;
+        align-items: center;
+        padding: 0 6px;
+        background-color: #555555;
+        margin: 2px;
+
+        >p {
+            flex-grow: 1;
+            margin: 4px 0;
+        }
+    }
 
     #card-dialog {
+        width: 360px;
+    }
+
+    #load-dialog {
         width: 360px;
     }
 }

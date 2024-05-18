@@ -8,8 +8,9 @@ import Card from './game-objects/Card';
 import Stack from './game-objects/Stack';
 import { Vector } from './utils/Vector';
 import { currentID } from './utils/uniqueID';
-import JSZip, { JSZipObject } from 'jszip';
+import JSZip, { JSZipObject, file } from 'jszip';
 import { saveAs } from 'file-saver';
+import dragElement from './utils/drag-element';
 
 declare global {
     var gm: GameManager;
@@ -26,13 +27,14 @@ const hostBtn = document.querySelector<HTMLButtonElement>('button#host')!;
 const lobbyInput = document.querySelector<HTMLInputElement>('input#lobby')!;
 const joinBtn = document.querySelector<HTMLButtonElement>('button#join')!;
 
-const createCardForm = document.querySelector<HTMLFormElement>('#card-dialog')!;
-const createDeckForm = document.querySelector<HTMLFormElement>('#deck-dialog')!;
-const saveTableForm = document.querySelector<HTMLFormElement>('#save-dialog')!;
+const createCardForm = dragElement(document.querySelector<HTMLFormElement>('#card-dialog')!);
+const createDeckForm = dragElement(document.querySelector<HTMLFormElement>('#deck-dialog')!);
+const saveTableForm = dragElement(document.querySelector<HTMLFormElement>('#save-dialog')!);
+const loadTableForm = dragElement(document.querySelector<HTMLFormElement>('#load-dialog')!);
 
 const closeBtns = document.querySelectorAll<HTMLInputElement>('.close');
 closeBtns.forEach((btn) => {
-    btn.onclick = (e) => (e.target as HTMLElement).parentElement!.hidden = true;
+    btn.onclick = (e) => (e.target as HTMLElement).parentElement!.parentElement!.hidden = true;
 })
 
 const storedNickname = localStorage.getItem('nickname');
@@ -121,12 +123,10 @@ export const GetTexture = (key: string) => {
         });
 
         saveTableForm.addEventListener('submit', (e) => {
-            console.log(e);
             e.preventDefault();
             const formData = new FormData(saveTableForm);
             const name = formData.get('name');
             const isPackingTextures = formData.get('pack-textures') === 'on';
-            console.log(isPackingTextures)
 
             const objectSerialized: SerializedObject[] = [];
             const aliasesToSave: Set<string> = new Set<string>();
@@ -199,18 +199,49 @@ export const GetTexture = (key: string) => {
         const loadBtn = document.querySelector<HTMLButtonElement>("#load-btn")!;
         loadBtn.hidden = false;
         loadBtn.addEventListener('click', async () => {
-            // let input = document.createElement('input');
-            // input.type = 'file';
-            // input.accept = ".zip";
-            // input.onchange = async _ => {
-            //     if (input.files) {
-            //         const zipFile = input.files[0];
-
+            loadTableForm.hidden = false;
+            // show saves
+            const listContainer = document.querySelector<HTMLDivElement>('#saves-list')!;
+            listContainer.innerHTML = ''
             const storageRoot = await navigator.storage.getDirectory();
-            const saveFile = await storageRoot.getFileHandle('save.zip');
-            const zipFile = await saveFile.getFile()
+            const entries = storageRoot.entries();
+            for await (const [path, fileHandle] of entries) {
+                const item = document.createElement('div');
+                item.className = 'save-list-item';
+
+                const itemText = document.createElement('p');
+                itemText.innerText = path;
+                item.appendChild(itemText);
+
+                const itemLoad = document.createElement('button');
+                itemLoad.addEventListener('click', async () => loadSave(await (await storageRoot.getFileHandle(path)).getFile()))
+                itemLoad.innerText = 'Load';
+                item.appendChild(itemLoad);
+
+                const itemRemove = document.createElement('button');
+                itemRemove.innerText = 'x';
+                itemRemove.addEventListener('click', async () => {
+                    await storageRoot.removeEntry(path);
+                    item.remove();
+                })
+                item.appendChild(itemRemove);
+
+                listContainer.appendChild(item);
+            }
+        });
+
+        loadTableForm.addEventListener('submit', (e) => {
+            e.preventDefault()
+            if (e.submitter?.id === 'load-table') {
+                const formData = new FormData(loadTableForm);
+                const saveFile = formData.get('save-file') as File;
+                loadSave(saveFile);
+            }
+        });
+
+        const loadSave = async (saveFile: File) => {
             const zip = new JSZip();
-            const zipObject = await zip.loadAsync(await zipFile.arrayBuffer(), { createFolders: true });
+            const zipObject = await zip.loadAsync(await saveFile.arrayBuffer(), { createFolders: true });
             const textureAliases: string[] = [];
             const spritesheetsToResolve: { path: string, spriteSheetData: SpritesheetData }[] = [];
             const filesTextures: { path: string, file: JSZipObject }[] = [];
@@ -241,11 +272,7 @@ export const GetTexture = (key: string) => {
                 hands,
             });
             gameManager.sync();
-            // }
-
-            // };
-            // input.click();
-        });
+        }
 
         const cardBtn = document.querySelector<HTMLButtonElement>("#create-card-btn")!;
         cardBtn.hidden = false;
