@@ -210,7 +210,7 @@ export const GetTexture = (key: string) => {
                 item.className = 'save-list-item';
 
                 const itemText = document.createElement('p');
-                itemText.innerText = path;
+                itemText.innerText = path.replace('.zip', '');
                 item.appendChild(itemText);
 
                 const itemLoad = document.createElement('button');
