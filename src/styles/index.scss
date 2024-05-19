@@ -187,9 +187,18 @@ button {
         margin: 2px;
         scroll-snap-align: start;
 
-        >p {
+        >div {
             flex-grow: 1;
-            margin: 4px 0;
+            padding: 4px;
+        }
+
+        p {
+            margin: 0;
+        }
+
+        p.meta {
+            font-size: 10;
+            color: #bdbdbd;
         }
     }
 
