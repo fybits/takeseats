@@ -1,4 +1,4 @@
-import { Application, Assets, Texture, Sprite, Container, FederatedPointerEvent, Spritesheet, SubtractBlend, GlRenderTargetAdaptor, Rectangle, v8_0_0, buildAdaptiveQuadratic } from 'pixi.js';
+import { Application, Assets, Texture, Sprite, Container, FederatedPointerEvent, Spritesheet, SubtractBlend, GlRenderTargetAdaptor, Rectangle, v8_0_0, buildAdaptiveQuadratic, AnimatedSprite } from 'pixi.js';
 import { DropShadowFilter, OutlineFilter } from "pixi-filters"
 import Camera from './game-objects/Camera';
 import { DataEventData, PeerRoom } from './PeerRoom';
@@ -17,6 +17,7 @@ import { currentID, resetUIDs } from './utils/uniqueID';
 import { GetTexture } from './app';
 import Ping from './effects/Ping';
 import Hand from './game-objects/Hand';
+import Dice from './game-objects/Dice';
 
 interface Player {
     position: Vector;
@@ -39,6 +40,10 @@ export type SerializedObject = {
 } | {
     type: 'stack';
     items: number[],
+} | {
+    type: 'dice';
+    size: number;
+    value: number,
 })
 
 const colors = [0xEE4B2B, 0x0096FF, 0xF0C05A, 0xffffff, 0xB163A3, 0x7F00FF]
@@ -277,6 +282,21 @@ export default class GameManager {
                 stack.id = obj.id;
                 this.camera.addChild(stack);
             }
+            if (obj.type === 'dice') {
+                const spritesheet = Assets.get<Spritesheet>('d20');
+                const dice = new Dice(spritesheet);
+                dice.x = obj.x;
+                dice.y = obj.y;
+                dice.desiredPosition.x = obj.x;
+                dice.desiredPosition.y = obj.y;
+                dice.angle = obj.angle;
+                this.gameObjects.delete(dice.id);
+                dice.id = obj.id;
+                this.gameObjects.set(dice.id, dice);
+                dice.id = obj.id;
+                this.camera.addChild(dice);
+                dice.value = obj.value;
+            }
         }
         for (let i = 0; i < state.hands.length; i++) {
             const hand = state.hands[i];
@@ -455,17 +475,14 @@ export default class GameManager {
 
     async startGame() {
 
-        // const spritesheet = Assets.get<Spritesheet>('cards-sheet');
+        const spritesheet = Assets.get<Spritesheet>('d20');
+        // await spritesheet.parse();
+        console.log(spritesheet)
+        // const d20 = new AnimatedSprite(spritesheet.animations['roll']);
 
-        // if (this.isHost) {
-        //     const cards: Card[] = [];
-
-        //     for (let i = 0; i < Object.keys(spritesheet.textures).length - 1; i++) {
-        //         const card = new Card(spritesheet.textures[`card${i + 1}`], spritesheet.textures[`card32`]);
-        //         cards.push(card);
-        //     }
-        //     this.camera.addChild(new Stack(cards));
-        // }
+        // d20.animationSpeed = 0.16;
+        const d20 = new Dice(spritesheet)
+        this.camera.addChild(d20);
 
         this.hands = [];
         let hand = new Hand(1000, 1000, 1200, 400, colors[0]);
@@ -534,7 +551,7 @@ export default class GameManager {
         this.app.ticker.add((ticker) => {
             for (const child of this.app.stage.children) {
                 if (isIUpdatable(child)) {
-                    child.update(ticker.deltaTime);
+                    child.Update(ticker.deltaTime);
                 }
             }
             for (const child of this.camera.children) {
@@ -549,7 +566,7 @@ export default class GameManager {
                     }
                 }
                 if (isIUpdatable(child)) {
-                    child.update(ticker.deltaTime);
+                    child.Update(ticker.deltaTime);
                 }
             }
             const input: Vector = new Vector();
@@ -662,7 +679,7 @@ export default class GameManager {
             input.rotate(-this.camera.rotation);
             this.camera.desiredPosition.x += input.x * ticker.deltaTime * 20;
             this.camera.desiredPosition.y += input.y * ticker.deltaTime * 20;
-            this.camera.update(ticker.deltaTime);
+            this.camera.Update(ticker.deltaTime);
         })
     }
 };

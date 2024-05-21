@@ -153,7 +153,7 @@ export default class Hand extends Container implements IUpdatable {
             playerElement.style.color = colorToHexString(this.color);
     }
 
-    update(dt: number): void {
+    Update(dt: number): void {
         this.hidden = this.player !== gm.room.address();
         const n = this.itemsContainer.children.length;
         for (let i = 0; i < n; i++) {
@@ -169,7 +169,7 @@ export default class Hand extends Container implements IUpdatable {
             if (this.hidden && card.currentGraphics.texture !== card.back) {
                 card.hide()
             }
-            card.update(dt);
+            card.Update(dt);
         }
     }
 

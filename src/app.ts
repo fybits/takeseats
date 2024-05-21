@@ -106,9 +106,10 @@ export const GetTexture = (key: string) => {
     Assets.add({ alias: "card-face", src: "assets/card-face.png" });
     Assets.add({ alias: "cursor", src: "assets/cursor.png" });
     Assets.add({ alias: "arrow", src: "assets/arrow.png" });
-    // Assets.add({ alias: 'cards-sheet', src: "assets/spritesheet.json" })
+    Assets.add({ alias: 'd20', src: "assets/d20.json" });
+
     // await Assets.load(['card', 'cursor', 'arrow', 'card-face', 'cards-sheet']);
-    await Assets.load(['card', 'cursor', 'arrow', 'card-face']);
+    await Assets.load(['card', 'cursor', 'arrow', 'card-face', 'd20']);
     const connectToLobby = (nickname: string, lobbyKey?: string) => {
         localStorage.setItem('nickname', nickname);
         room = new PeerRoom(nickname);

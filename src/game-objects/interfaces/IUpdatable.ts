@@ -1,7 +1,7 @@
 export default interface IUpdatable {
-    update(dt: number): void;
+    Update(dt: number): void;
 }
 
 export const isIUpdatable = (object: any): object is IUpdatable => {
-    return (object as IUpdatable).update !== undefined;
+    return (object as IUpdatable).Update !== undefined;
 }

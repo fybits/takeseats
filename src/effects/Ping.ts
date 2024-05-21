@@ -32,7 +32,7 @@ export default class Ping extends Sprite implements IUpdatable {
         setTimeout(() => this.destroy(), durationMS);
     }
 
-    update(dt: number): void {
+    Update(dt: number): void {
         this.animCount += dt;
         const animShrink = (Math.sin(this.animCount / 10) + 1) / 2 + 0.5;
 

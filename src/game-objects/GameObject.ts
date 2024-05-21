@@ -40,7 +40,7 @@ export default abstract class GameObject extends Container implements IUpdatable
         this.filtersMap.delete(key);
     }
 
-    update(dt: number) {
+    Update(dt: number) {
         const dx = this.desiredPosition.x - this.x;
         const dy = this.desiredPosition.y - this.y;
         this.x += dx * dt / 2;
