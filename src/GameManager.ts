@@ -651,7 +651,7 @@ export default class GameManager {
             }
 
             if (angle !== 0) {
-                if (Controls.instance.keyboard.get('shift') === KeyState.HELD) {
+                if (Controls.instance.keyboard.get(' ') === KeyState.HELD) {
                     this.camera.angle -= angle * ticker.deltaTime;
                 } else {
                     if (currentTarget) {
