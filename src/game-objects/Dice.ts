@@ -1,12 +1,8 @@
-import { AnimatedSprite, Graphics, Sprite, Spritesheet, Texture } from "pixi.js";
+import { AnimatedSprite, Spritesheet } from "pixi.js";
 import IDraggable from "./interfaces/IDraggable";
-import { OutlineFilter } from "pixi-filters";
-import IStackable, { isIStackable } from "./interfaces/IStackable";
-import Stack from "./Stack";
+import { DropShadowFilter, OutlineFilter } from "pixi-filters";
 import GameObject from "./GameObject";
-import IFlipable from "./interfaces/IFlipable";
 import { SerializedObject } from "../GameManager";
-import { GetTexture } from "../app";
 import IRollable from "./interfaces/IRollable";
 
 export default class Dice extends GameObject implements IDraggable, IRollable {
@@ -33,7 +29,9 @@ export default class Dice extends GameObject implements IDraggable, IRollable {
         this.currentGraphics.animationSpeed = 0.16;
         this.currentGraphics.anchor.x = 0.5;
         this.currentGraphics.anchor.y = 0.5;
+        this.baseZindex = 10;
         this.addChild(this.currentGraphics)
+
         this.on('pointerover', () => {
             this.addFilter('outline', new OutlineFilter({ thickness: 5, color: 'yellow' }));
             this.cursor = "grab";
@@ -43,6 +41,7 @@ export default class Dice extends GameObject implements IDraggable, IRollable {
             this.removeFilter('outline');
             gm.target = null;
         });
+        this.addFilter('dice-shadow', new DropShadowFilter({ blur: 2, offset: { x: 4, y: 20 }, pixelSize: { x: 1, y: 1 } }));
     }
 
     roll(randSeeded: () => number): void {

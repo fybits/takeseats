@@ -10,11 +10,13 @@ export default abstract class GameObject extends Container implements IUpdatable
     filters: Filter[];
     filtersMap: Map<string, Filter>;
     desiredPosition: Vector;
+    baseZindex: number;
 
     constructor() {
         super();
         this.id = uniqueID();
         this.desiredPosition = new Vector(this.x, this.y);
+        this.baseZindex = 0;
 
         this.filters = [];
         this.filtersMap = new Map<string, Filter>();

@@ -8,9 +8,10 @@ import Card from './game-objects/Card';
 import Stack from './game-objects/Stack';
 import { Vector } from './utils/Vector';
 import { currentID } from './utils/uniqueID';
-import JSZip, { JSZipObject, file } from 'jszip';
+import JSZip, { JSZipObject } from 'jszip';
 import { saveAs } from 'file-saver';
 import dragElement from './utils/drag-element';
+import Dice from './game-objects/Dice';
 
 declare global {
     var gm: GameManager;
@@ -464,6 +465,15 @@ export const GetTexture = (key: string) => {
             gameManager.camera.addChild(new Stack(cards));
             gameManager.sync();
         }
+
+        const diceBtn = document.querySelector<HTMLButtonElement>("#create-dice-btn")!;
+        diceBtn.hidden = false;
+        diceBtn.addEventListener('click', () => {
+            const d20spritesheet = Assets.get<Spritesheet>('d20');
+            const d20 = new Dice(d20spritesheet);
+            gameManager.camera.addChild(d20);
+            gameManager.sync();
+        });
         //#endregion ui
 
         globalThis.gm = gameManager;

@@ -404,7 +404,7 @@ export default class GameManager {
     }
     onMoveEnd(target: GameObject) {
         target.eventMode = 'static';
-        target.zIndex = 0;
+        target.zIndex = target.baseZindex;
         target.removeFilter('shadow');
     }
 
@@ -474,16 +474,6 @@ export default class GameManager {
     }
 
     async startGame() {
-
-        const spritesheet = Assets.get<Spritesheet>('d20');
-        // await spritesheet.parse();
-        console.log(spritesheet)
-        // const d20 = new AnimatedSprite(spritesheet.animations['roll']);
-
-        // d20.animationSpeed = 0.16;
-        const d20 = new Dice(spritesheet)
-        this.camera.addChild(d20);
-
         this.hands = [];
         let hand = new Hand(1000, 1000, 1200, 400, colors[0]);
         this.hands.push(hand);
