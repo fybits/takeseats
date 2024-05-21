@@ -1,5 +1,5 @@
 
-import { Application, Assets, Spritesheet, SpritesheetData, Texture, autoDetectRenderer, loadTextures } from 'pixi.js';
+import { Application, Assets, Spritesheet, SpritesheetData, Texture, autoDetectRenderer, getTemporaryCanvasFromImage, loadTextures } from 'pixi.js';
 import { DataEventData, PeerRoom } from './PeerRoom';
 import Controls from './Controls';
 import Camera from './game-objects/Camera';
@@ -130,6 +130,7 @@ export const GetTexture = (key: string) => {
         saveBtn.addEventListener('click', async () => {
             saveTableForm.hidden = false;
             return;
+
         });
 
         saveTableForm.addEventListener('submit', async (e) => {
@@ -204,7 +205,9 @@ export const GetTexture = (key: string) => {
                 if (e.submitter!.id === 'save-table-to-disk') {
                     const blob = new Blob([JSON.stringify(state)], { type: 'plain/text' });
                     saveAs(blob, `${name}.json`);
-                    saveAs(content, `${name}_textures.zip`);
+                    if (isPackingTextures) {
+                        saveAs(content, `${name}_textures.zip`);
+                    }
                 } else {
                     const stream = await saveFile.createWritable();
                     try {
@@ -212,11 +215,13 @@ export const GetTexture = (key: string) => {
                     } finally {
                         await stream.close();
                     }
-                    const streamTextures = await texturesFile.createWritable();
-                    try {
-                        await streamTextures.write(content);
-                    } finally {
-                        await streamTextures.close();
+                    if (isPackingTextures) {
+                        const streamTextures = await texturesFile.createWritable();
+                        try {
+                            await streamTextures.write(content);
+                        } finally {
+                            await streamTextures.close();
+                        }
                     }
                 }
             });
@@ -250,23 +255,28 @@ export const GetTexture = (key: string) => {
 
                     const saveHandle = await storageRoot.getFileHandle(path);
                     const saveFile = await saveHandle.getFile();
-                    const state: SaveFile = JSON.parse(await saveFile.text());
-
                     const itemMeta = document.createElement('p');
                     itemMeta.className = 'meta';;
-                    itemMeta.innerText = new Date(state.meta.timestamp).toLocaleString();
-                    itemInfoContainer.appendChild(itemMeta);
-
                     item.appendChild(itemInfoContainer);
+                    try {
+                        const state: SaveFile = JSON.parse(await saveFile.text());
 
-                    const itemLoad = document.createElement('button');
-                    itemLoad.addEventListener('click', async () => {
-                        const texturesFileHandle = await storageRoot.getFileHandle(`${path.replace('.json', '')}_textures.zip`);
-                        await loadTextures(await texturesFileHandle.getFile());
-                        loadSave(state);
-                    })
-                    itemLoad.innerText = 'Load';
-                    item.appendChild(itemLoad);
+                        itemMeta.innerText = new Date(state.meta.timestamp).toLocaleString();
+
+                        const itemLoad = document.createElement('button');
+                        itemLoad.addEventListener('click', async () => {
+                            const texturesFileHandle = await storageRoot.getFileHandle(`${path.replace('.json', '')}_textures.zip`);
+                            await loadTextures(await texturesFileHandle.getFile());
+                            loadSave(state);
+                        })
+                        itemLoad.innerText = 'Load';
+                        item.appendChild(itemLoad);
+                    } catch (e) {
+                        itemMeta.innerText = 'CORRUPTED';
+                        itemMeta.style.color = 'red';
+                        itemMeta.style.fontWeight = 'bold';
+                    }
+                    itemInfoContainer.appendChild(itemMeta);
 
                     const itemRemove = document.createElement('button');
                     itemRemove.innerText = 'x';
@@ -281,13 +291,14 @@ export const GetTexture = (key: string) => {
             }
         });
 
-        loadTableForm.addEventListener('submit', (e) => {
+        loadTableForm.addEventListener('submit', async (e) => {
             e.preventDefault()
-            // if (e.submitter?.id === 'load-table') {
-            //     const formData = new FormData(loadTableForm);
-            //     const saveFile = formData.get('save-file') as File;
-            //     loadSave(saveFile);
-            // }
+            if (e.submitter?.id === 'load-table') {
+                const formData = new FormData(loadTableForm);
+                const saveFile = formData.get('save-file') as File;
+                const state: SaveFile = JSON.parse(await saveFile.text());
+                loadSave(state);
+            }
         });
 
         const loadTextures = async (texturesFile: File) => {
@@ -301,7 +312,8 @@ export const GetTexture = (key: string) => {
                 if (path.endsWith('json')) {
                     spritesheetsToResolve.push({ path, spriteSheetData: JSON.parse(await file.async('string')) })
                 } else {
-                    const src = await getDataURL(await file.async('blob'));
+                    const blob = await file.async('blob');
+                    const src = await getDataURL(blob);
                     textureAliases.push(path);
                     Assets.add({ alias: path, src: src })
                 }

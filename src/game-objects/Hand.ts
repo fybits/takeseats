@@ -125,8 +125,7 @@ export default class Hand extends Container implements IUpdatable {
         card.canStack = false;
         this.itemsContainer.addChild(card);
         this.itemsContainer.setChildIndex(card, index)
-        card.x = this.itemsContainer.toLocal(card, gm.camera).x;
-        card.y = this.handHeight / 2;
+        card.position = this.itemsContainer.toLocal(card, gm.camera);
         card.desiredPosition.y = this.handHeight / 2;
         card.angle += -this.angle;
     }

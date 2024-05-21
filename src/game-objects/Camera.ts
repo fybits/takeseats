@@ -24,8 +24,8 @@ export default class Camera extends Container implements IUpdatable {
     }
 
     update(dt: number) {
-        const dZoom = this.desiredZoom - this.zoom;
-        this.zoom = + this.zoom + dZoom * dt / 15
+        const dZoom = Math.exp(this.desiredZoom) - 1 - this.zoom;
+        this.zoom = +this.zoom + dZoom * dt / 15;
         this.scale.x = this.zoom;
         this.scale.y = this.zoom;
         const dPos = { x: this.desiredPosition.x - this.pivot.x, y: this.desiredPosition.y - this.pivot.y };

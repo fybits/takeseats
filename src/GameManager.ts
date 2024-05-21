@@ -506,7 +506,7 @@ export default class GameManager {
             if (Controls.instance.keyboard.get('alt') === KeyState.HELD) {
                 this.peekViewZoom = Math.min(Math.max(this.peekViewZoom - event.deltaY / 2000, 0.03), 6);
             } else {
-                this.camera.desiredZoom = Math.min(Math.max(this.camera.desiredZoom - event.deltaY / 2000, 0.2), 6);
+                this.camera.desiredZoom = Math.min(Math.max(this.camera.desiredZoom - event.deltaY / 2000, 0.2), 2);
             }
         })
 
