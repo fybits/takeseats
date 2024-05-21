@@ -3,6 +3,7 @@ import uniqueID from "../utils/uniqueID";
 import { SerializedObject } from "../GameManager";
 import { Vector } from "../utils/Vector";
 import IUpdatable from "./interfaces/IUpdatable";
+import { DropShadowFilter } from "pixi-filters";
 
 export default abstract class GameObject extends Container implements IUpdatable {
     id: number;
@@ -33,6 +34,10 @@ export default abstract class GameObject extends Container implements IUpdatable
         if (!this.filtersMap.has(key)) {
             this.filtersMap.set(key, filter)
             this.filters = [...this.filters, filter];
+
+            if (filter instanceof DropShadowFilter) {
+                filter._offset = new Vector(filter.offsetX, filter.offsetY);;
+            }
         }
     }
 
@@ -47,6 +52,12 @@ export default abstract class GameObject extends Container implements IUpdatable
         const dy = this.desiredPosition.y - this.y;
         this.x += dx * dt / 2;
         this.y += dy * dt / 2;
+        this.filters.forEach((filter) => {
+            if (filter instanceof DropShadowFilter) {
+                filter.offsetX = filter._offset.x * gm.camera.scale.x;
+                filter.offsetY = filter._offset.y * gm.camera.scale.y;
+            }
+        })
     }
 
     abstract serialize(): SerializedObject;

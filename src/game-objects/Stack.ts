@@ -99,7 +99,7 @@ export default class Stack extends GameObject implements IDraggable, IStackable,
         this.currentGraphics.height = this.items[this.items.length - 1].height;
         const deckFilter = this.filtersMap.get('deck-details');
         if (deckFilter) {
-            (deckFilter as DropShadowFilter).offsetY = this.items.length * 2 * gm.camera.scale.x;
+            (deckFilter as DropShadowFilter)._offset.y = this.items.length * 2;
         }
     }
 
