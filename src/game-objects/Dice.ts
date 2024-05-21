@@ -49,6 +49,7 @@ export default class Dice extends GameObject implements IDraggable, IRollable {
         setTimeout(() => {
             this.currentGraphics.stop();
             this.value = Math.floor(randSeeded() * 20);
+            this.angle = randSeeded() * 360;
         }, 500)
     }
 
