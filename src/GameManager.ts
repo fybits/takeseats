@@ -182,6 +182,8 @@ export default class GameManager {
                     if (address !== room.address()) {
                         const item = this.gameObjects.get(message.target);
                         if (item) {
+                            item.desiredPosition = message.position;
+                            item.force = message.force;
                             this.onMoveEnd(item as GameObject);
                         }
                     }
@@ -426,7 +428,7 @@ export default class GameManager {
                 this.dragTarget.desiredPosition.x = center.x;
                 this.dragTarget.desiredPosition.y = center.y;
             } else {
-                this.onDragEnd();
+                this.onDragEnd(event);
             }
             this.dragTarget.onDrag()
             this.room.send({
@@ -438,17 +440,45 @@ export default class GameManager {
         }
     }
 
-    onDragEnd() {
+    onDragEnd(event) {
         if (this.dragTarget) {
             if (!this.dragTarget.destroyed) {
                 this.dragTarget.onDragEnd();
-                this.onMoveEnd(this.dragTarget);
-            }
-            this.room.send({
-                type: 'move-end-object', message: {
-                    target: this.dragTarget.id,
+                const newDesiredPos = this.camera.screenToWorldPoint(new Vector(event.screen.x, event.screen.y));
+                this.dragTarget.desiredPosition = newDesiredPos;
+                const force = new Vector();
+                const mouseMovement = Controls.instance.mouse.movement;
+                console.log(mouseMovement)
+                if (mouseMovement.length > 2) {
+                    const dir = mouseMovement.normalized;
+                    const len = Math.min(mouseMovement.length, 5);
+                    force.x = dir.x * len * 10;
+                    force.y = dir.y * len * 10;
+                    this.dragTarget.force = force;
+                    if (this.dragTarget instanceof Dice) {
+                        const seed = Date.now();
+                        const randSeeded = rand(seed);
+                        if (this.dragTarget && isIRollable(this.dragTarget)) {
+                            this.dragTarget.roll(randSeeded);
+                            this.room.send({
+                                type: 'roll-object',
+                                message: {
+                                    target: this.dragTarget.id,
+                                    seed: seed,
+                                }
+                            })
+                        }
+                    }
                 }
-            });
+                this.onMoveEnd(this.dragTarget);
+                this.room.send({
+                    type: 'move-end-object', message: {
+                        target: this.dragTarget.id,
+                        position: newDesiredPos,
+                        force: force,
+                    }
+                });
+            }
             this.app.stage.off('pointermove', this.onDragMove, this);
             this.dragTarget = null;
         }

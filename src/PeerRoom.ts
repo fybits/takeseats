@@ -18,7 +18,7 @@ export type DataEventData =
     | { type: 'player-cursor', message: { position: Vector } }
     | { type: 'move-start-object', message: { target: number } }
     | { type: 'move-object', message: { target: number, position: Vector } }
-    | { type: 'move-end-object', message: { target: number } }
+    | { type: 'move-end-object', message: { target: number, position: Vector, force: Vector } }
     | { type: 'rotate-object', message: { target: number, angle: number } }
     | { type: 'roll-object', message: { target: number, seed: number } }
     | { type: 'flip-object', message: { target: number } }

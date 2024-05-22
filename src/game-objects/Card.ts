@@ -39,6 +39,7 @@ export default class Card extends GameObject implements IDraggable, IStackable, 
         this.addChild(mask);
         this.currentGraphics.mask = mask;
         this.addChild(this.currentGraphics);
+        this.friction = 0.08;
 
         this.eventMode = 'static';
         this.on('pointerdown', this.onDragStart);

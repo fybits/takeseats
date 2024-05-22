@@ -12,12 +12,16 @@ export default abstract class GameObject extends Container implements IUpdatable
     filtersMap: Map<string, Filter>;
     desiredPosition: Vector;
     baseZindex: number;
+    force: Vector;
+    friction: number;
 
     constructor() {
         super();
         this.id = uniqueID();
         this.desiredPosition = new Vector(this.x, this.y);
         this.baseZindex = 0;
+        this.force = new Vector();
+        this.friction = 1;
 
         this.filters = [];
         this.filtersMap = new Map<string, Filter>();
@@ -48,6 +52,10 @@ export default abstract class GameObject extends Container implements IUpdatable
     }
 
     Update(dt: number) {
+        this.force.x *= 1 - this.friction;
+        this.force.y *= 1 - this.friction;
+        this.desiredPosition.x = this.desiredPosition.x + this.force.x;
+        this.desiredPosition.y = this.desiredPosition.y + this.force.y;
         const dx = this.desiredPosition.x - this.x;
         const dy = this.desiredPosition.y - this.y;
         this.x += dx * dt / 2;

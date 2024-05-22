@@ -26,6 +26,7 @@ export default class Dice extends GameObject implements IDraggable, IRollable {
         this.currentGraphics = new AnimatedSprite(spritesheet.animations['roll']);
         this.spritesheet = spritesheet;
         this.value = 0;
+        this.friction = 0.05;
         this.currentGraphics.animationSpeed = 0.16;
         this.currentGraphics.anchor.x = 0.5;
         this.currentGraphics.anchor.y = 0.5;
