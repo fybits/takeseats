@@ -1,4 +1,4 @@
-import { Vector } from "./Vector";
+import { Vector } from "../utils/Vector";
 
 const dragElement = <T extends HTMLElement>(dialog: T): T => {
     const lastPos: Vector = new Vector();
