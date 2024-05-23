@@ -9,6 +9,7 @@ export default class Dice extends GameObject implements IDraggable, IRollable {
     currentGraphics: AnimatedSprite;
     spritesheet: Spritesheet;
     _value: number;
+    size: number;
 
     get value() {
         return this._value;
@@ -16,22 +17,23 @@ export default class Dice extends GameObject implements IDraggable, IRollable {
 
     set value(value: number) {
         this._value = value;
-        this.currentGraphics.texture = Object.values(this.spritesheet.textures)[value];
+        console.log('hit')
+        this.currentGraphics.texture = Object.values(this.spritesheet.textures)[value - 1];
     }
 
-    constructor(spritesheet: Spritesheet) {
+    constructor(spritesheet: Spritesheet, size: number) {
         super();
         this.eventMode = 'static';
         this.on('pointerdown', this.onDragStart);
         this.currentGraphics = new AnimatedSprite(spritesheet.animations['roll']);
         this.spritesheet = spritesheet;
-        this.value = 0;
-        this.friction = 0.05;
+        this.value = 1;
+        this.friction = 0.1;
         this.currentGraphics.animationSpeed = 0.16;
-        this.currentGraphics.anchor.x = 0.5;
-        this.currentGraphics.anchor.y = 0.5;
+        this.currentGraphics.anchor = { x: 0.5, y: 0.5 };
         this.baseZindex = 10;
         this.addChild(this.currentGraphics)
+        this.size = size;
 
         this.on('pointerover', () => {
             this.addFilter('outline', new OutlineFilter({ thickness: 5, color: 'yellow' }));
@@ -49,7 +51,7 @@ export default class Dice extends GameObject implements IDraggable, IRollable {
         this.currentGraphics.play()
         setTimeout(() => {
             this.currentGraphics.stop();
-            this.value = Math.floor(randSeeded() * 20);
+            this.value = Math.floor(randSeeded() * this.size) + 1;
             this.angle = randSeeded() * 360;
         }, 500)
     }
@@ -71,9 +73,13 @@ export default class Dice extends GameObject implements IDraggable, IRollable {
             x: this.x,
             y: this.y,
             angle: this.angle,
-            size: 20,
+            size: this.size,
             value: this.value,
         }
+    }
+
+    toString(): string {
+        return '' + this.value;
     }
 
     reloadTextures() {

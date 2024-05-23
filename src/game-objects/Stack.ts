@@ -183,6 +183,10 @@ export default class Stack extends GameObject implements IDraggable, IStackable,
         }
     }
 
+    toString(): string {
+        return '' + this.items.length;
+    }
+
     reloadTextures() {
         this.currentGraphics.texture = GetTexture(this.currentGraphics.texture.label!);
         this.currentGraphics.width = this.items[this.items.length - 1].width;

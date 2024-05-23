@@ -52,8 +52,8 @@ export default abstract class GameObject extends Container implements IUpdatable
     }
 
     Update(dt: number) {
-        this.force.x *= 1 - this.friction;
-        this.force.y *= 1 - this.friction;
+        this.force.x -= (this.force.x * this.friction) * dt;
+        this.force.y -= (this.force.y * this.friction) * dt;
         this.desiredPosition.x = this.desiredPosition.x + this.force.x;
         this.desiredPosition.y = this.desiredPosition.y + this.force.y;
         const dx = this.desiredPosition.x - this.x;
@@ -66,6 +66,10 @@ export default abstract class GameObject extends Container implements IUpdatable
                 filter.offsetY = filter._offset.y * gm.camera.scale.y;
             }
         })
+    }
+
+    toString(): string {
+        return '';
     }
 
     abstract serialize(): SerializedObject;

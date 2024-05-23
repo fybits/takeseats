@@ -13,6 +13,7 @@ import { saveAs } from 'file-saver';
 import dragElement from './ui/drag-element';
 import Dice from './game-objects/Dice';
 import { button, form, toggle } from './ui';
+import TextDice from './game-objects/TextDice';
 
 declare global {
     var gm: GameManager;
@@ -107,9 +108,20 @@ export const GetTexture = (key: string) => {
     Assets.add({ alias: "cursor", src: "assets/cursor.png" });
     Assets.add({ alias: "arrow", src: "assets/arrow.png" });
     Assets.add({ alias: 'd20', src: "assets/d20.json" });
+    Assets.add({ alias: 'd4-sheet', src: "assets/dices/d4_sheet.json" });
+    Assets.add({ alias: 'd6-sheet', src: "assets/dices/d6_sheet.json" });
+    Assets.add({ alias: 'd8-sheet', src: "assets/dices/d8_sheet.json" });
+    Assets.add({ alias: 'd12-sheet', src: "assets/dices/d12_sheet.json" });
+    Assets.add({ alias: 'd20-sheet', src: "assets/dices/d20_sheet.json" });
 
     // await Assets.load(['card', 'cursor', 'arrow', 'card-face', 'cards-sheet']);
-    await Assets.load(['card', 'cursor', 'arrow', 'card-face', 'd20']);
+    await Assets.load(['card', 'cursor', 'arrow', 'card-face', 'd20',
+        'd4-sheet',
+        'd6-sheet',
+        'd8-sheet',
+        'd12-sheet',
+        'd20-sheet',
+    ]);
     const connectToLobby = (nickname: string, lobbyKey?: string) => {
         localStorage.setItem('nickname', nickname);
         room = new PeerRoom(nickname);
@@ -163,8 +175,6 @@ export const GetTexture = (key: string) => {
                         if (obj instanceof Card) {
                             getTexture(obj.face);
                             getTexture(obj.back);
-                        } else {
-                            getTexture(obj.currentGraphics.texture);
                         }
                     }
                 }
@@ -450,9 +460,33 @@ export const GetTexture = (key: string) => {
             document.querySelector<HTMLDivElement>('#back-file')!.hidden = !(e.target as HTMLInputElement).checked;
         }
 
-        button('#create-dice-btn', () => {
-            const d20spritesheet = Assets.get<Spritesheet>('d20');
-            const d20 = new Dice(d20spritesheet);
+        button('#dice-d4', () => {
+            const d4spritesheet = Assets.get<Spritesheet>('d4-sheet');
+            const d4 = new TextDice(d4spritesheet, 4);
+            gameManager.camera.addChild(d4);
+            gameManager.sync();
+        });
+        button('#dice-d6', () => {
+            const d6spritesheet = Assets.get<Spritesheet>('d6-sheet');
+            const d6 = new TextDice(d6spritesheet, 6);
+            gameManager.camera.addChild(d6);
+            gameManager.sync();
+        });
+        button('#dice-d8', () => {
+            const d8spritesheet = Assets.get<Spritesheet>('d8-sheet');
+            const d8 = new TextDice(d8spritesheet, 8);
+            gameManager.camera.addChild(d8);
+            gameManager.sync();
+        });
+        button('#dice-d12', () => {
+            const d12spritesheet = Assets.get<Spritesheet>('d12-sheet');
+            const d12 = new TextDice(d12spritesheet, 12);
+            gameManager.camera.addChild(d12);
+            gameManager.sync();
+        });
+        button('#dice-d20', () => {
+            const d20spritesheet = Assets.get<Spritesheet>('d20-sheet');
+            const d20 = new TextDice(d20spritesheet, 20);
             gameManager.camera.addChild(d20);
             gameManager.sync();
         });

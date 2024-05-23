@@ -1,4 +1,4 @@
-import { Application, Assets, Texture, Sprite, Container, FederatedPointerEvent, Spritesheet, SubtractBlend, GlRenderTargetAdaptor, Rectangle, v8_0_0, buildAdaptiveQuadratic, AnimatedSprite } from 'pixi.js';
+import { Application, Assets, Texture, Sprite, FederatedPointerEvent, Spritesheet, Text } from 'pixi.js';
 import { DropShadowFilter, OutlineFilter } from "pixi-filters"
 import Camera from './game-objects/Camera';
 import { DataEventData, PeerRoom } from './PeerRoom';
@@ -18,6 +18,7 @@ import { GetTexture } from './app';
 import Ping from './effects/Ping';
 import Hand from './game-objects/Hand';
 import Dice from './game-objects/Dice';
+import TextDice from './game-objects/TextDice';
 
 interface Player {
     position: Vector;
@@ -41,7 +42,7 @@ export type SerializedObject = {
     type: 'stack';
     items: number[],
 } | {
-    type: 'dice';
+    type: 'dice' | 'text-dice';
     size: number;
     value: number,
 })
@@ -284,9 +285,17 @@ export default class GameManager {
                 stack.id = obj.id;
                 this.camera.addChild(stack);
             }
-            if (obj.type === 'dice') {
-                const spritesheet = Assets.get<Spritesheet>('d20');
-                const dice = new Dice(spritesheet);
+            if (obj.type === 'dice' || obj.type === 'text-dice') {
+                const spritesheet = Assets.get<Spritesheet>(`d${obj.size}-sheet`);
+                let dice: Dice;
+                switch (obj.type) {
+                    case 'dice':
+                        dice = new Dice(spritesheet, obj.size);
+                        break;
+                    case 'text-dice':
+                        dice = new TextDice(spritesheet, obj.size);
+                        break;
+                }
                 dice.x = obj.x;
                 dice.y = obj.y;
                 dice.desiredPosition.x = obj.x;
@@ -374,6 +383,7 @@ export default class GameManager {
 
     dragTarget: (GameObject & IDraggable) | null;
     target: GameObject | null;
+    tooltip: Text;
 
     onMoveStart(target: GameObject) {
         if (target.parent.label === 'hand_container' && isIStackable(target)) {
@@ -401,7 +411,7 @@ export default class GameManager {
         if (!target.parent) {
             this.camera.addChild(target);
         }
-        target.addFilter('shadow', new DropShadowFilter({ blur: 2, offset: { x: 4, y: 20 }, pixelSize: { x: 1, y: 1 } }))
+        target.addFilter('shadow', new DropShadowFilter({ blur: 4, offset: { x: 8, y: 30 }, pixelSize: { x: 1, y: 1 }, quality: 8 }))
 
     }
     onMoveEnd(target: GameObject) {
@@ -448,7 +458,6 @@ export default class GameManager {
                 this.dragTarget.desiredPosition = newDesiredPos;
                 const force = new Vector();
                 const mouseMovement = Controls.instance.mouse.movement;
-                console.log(mouseMovement)
                 if (mouseMovement.length > 2) {
                     const dir = mouseMovement.normalized;
                     const len = Math.min(mouseMovement.length, 5);
@@ -531,6 +540,14 @@ export default class GameManager {
             this.camera.addChild(hand);
         });
 
+        this.tooltip = new Text();
+        this.tooltip.zIndex = 1400;
+        this.tooltip.eventMode = 'none';
+        this.tooltip.style.fill = 0xffffff;
+        this.tooltip.style.dropShadow = true;
+        this.tooltip.anchor = { x: 0.5, y: 1 };
+        this.app.stage.addChild(this.tooltip);
+
         this.peekView = new Sprite();
         this.peekView.eventMode = 'none';
         this.peekView.zIndex = 1500;
@@ -600,6 +617,13 @@ export default class GameManager {
                 input.x += 1;
 
             const currentTarget = this.dragTarget || this.target;
+
+            if (currentTarget && !currentTarget.destroyed) {
+                this.tooltip.position = this.app.stage.toLocal({ x: currentTarget.x, y: currentTarget.y + currentTarget.getLocalBounds().top }, currentTarget.parent);
+                this.tooltip.text = currentTarget.toString();
+            } else {
+                this.tooltip.text = '';
+            }
 
             if (Controls.instance.keyboard.get('f') === KeyState.PRESSED) {
                 if (currentTarget && isIFlipable(currentTarget)) {

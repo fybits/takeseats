@@ -57,13 +57,17 @@ button {
             border-style: solid;
         }
 
-        button {
+        button,
+        .dropdown-btn {
+            position: relative;
             background-color: #18181821;
             border: none;
             color: white;
             padding: 16px;
             cursor: pointer;
             display: block;
+            font: inherit;
+            font-size: 0.9rem;
             transition: background-color 0.2s ease-out;
 
             &:hover {
@@ -73,6 +77,45 @@ button {
             &:active {
                 background-color: #181818b9;
             }
+        }
+
+        .dropdown {
+            position: relative;
+
+            &:hover {
+                .dropdown-btn {
+                    background-color: #1818187a;
+                }
+
+                .dropdown-options {
+                    display: block;
+                }
+            }
+
+            .dropdown-options {
+                display: none;
+                position: absolute;
+                top: 100%;
+                left: 0;
+                background: inherit;
+                min-width: 100%;
+
+                &>button {
+                    display: flex;
+                    text-align: left;
+                    min-width: 100%;
+                    text-wrap: nowrap;
+                    padding: 10px 16px;
+                    align-items: center;
+
+                    img {
+                        display: inline;
+                        height: 1rem;
+                        margin-right: 4px;
+                    }
+                }
+            }
+
         }
     }
 
