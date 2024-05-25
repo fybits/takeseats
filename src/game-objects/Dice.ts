@@ -36,7 +36,10 @@ export default class Dice extends GameObject implements IDraggable, IRollable {
         this.size = size;
 
         this.on('pointerover', () => {
-            this.addFilter('outline', new OutlineFilter({ thickness: 5, color: 'yellow' }));
+            if (!this.locked) {
+                this.addFilter('outline', new OutlineFilter({ thickness: 5, color: 'yellow' }));
+                this.cursor = "grab";
+            }
             this.cursor = "grab";
             gm.target = this;
         });
@@ -68,11 +71,8 @@ export default class Dice extends GameObject implements IDraggable, IRollable {
 
     serialize(): SerializedObject {
         return {
+            ...super.serialize(),
             type: 'dice',
-            id: this.id,
-            x: this.x,
-            y: this.y,
-            angle: this.angle,
             size: this.size,
             value: this.value,
         }

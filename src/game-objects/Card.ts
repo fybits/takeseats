@@ -44,7 +44,7 @@ export default class Card extends GameObject implements IDraggable, IStackable, 
         this.eventMode = 'static';
         this.on('pointerdown', this.onDragStart);
         this.on('pointerup', () => {
-            if (this.canStack && gm.dragTarget && isIStackable(gm.dragTarget)) {
+            if (!this.locked && this.canStack && gm.dragTarget && isIStackable(gm.dragTarget)) {
                 this.onStack(gm.dragTarget);
                 gm.room.send({
                     type: 'stack-object',
@@ -56,8 +56,10 @@ export default class Card extends GameObject implements IDraggable, IStackable, 
             }
         });
         this.on('pointerover', () => {
-            this.addFilter('outline', new OutlineFilter({ thickness: 5, color: 'yellow' }));
-            this.cursor = "grab";
+            if (!this.locked) {
+                this.addFilter('outline', new OutlineFilter({ thickness: 5, color: 'yellow' }));
+                this.cursor = "grab";
+            }
             gm.target = this;
         });
         this.on('pointerout', () => {
@@ -116,7 +118,7 @@ export default class Card extends GameObject implements IDraggable, IStackable, 
             this.currentGraphics.height = this.cardHeight;
         }
         const mask = this.currentGraphics.mask as Graphics;
-        mask.clear().roundRect(-this.currentGraphics.width / 2, -this.currentGraphics.height / 2, this.currentGraphics.width, this.currentGraphics.height, this.cardBorderRadius).fill(0xfff);;
+        mask.clear().roundRect(-this.currentGraphics.width / 2, -this.currentGraphics.height / 2, this.currentGraphics.width, this.currentGraphics.height, this.cardBorderRadius).fill(0xfff);
     }
 
     getItems(): (GameObject & IStackable)[] {
@@ -151,14 +153,11 @@ export default class Card extends GameObject implements IDraggable, IStackable, 
 
     serialize(): SerializedObject {
         return {
+            ...super.serialize(),
             type: 'card',
-            id: this.id,
             face: this.face.label!,
             back: this.back.label!,
             isFlipped: this.isFlipped,
-            x: this.x,
-            y: this.y,
-            angle: this.angle,
             inStack: this.stack !== null,
             width: this.cardWidth,
             height: this.cardHeight,
@@ -179,5 +178,7 @@ export default class Card extends GameObject implements IDraggable, IStackable, 
         } else {
             this.currentGraphics.height = this.cardHeight;
         }
+        const mask = this.currentGraphics.mask as Graphics;
+        mask.clear().roundRect(-this.currentGraphics.width / 2, -this.currentGraphics.height / 2, this.currentGraphics.width, this.currentGraphics.height, this.cardBorderRadius).fill(0xfff);
     }
 }

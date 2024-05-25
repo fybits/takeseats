@@ -43,10 +43,12 @@ export default class Stack extends GameObject implements IDraggable, IStackable,
             }
         });
         this.on('pointerover', () => {
-            if ('length' in this.filters) {
-                this.addFilter('outline', new OutlineFilter({ thickness: 5, color: 'yellow' }));
+            if (!this.locked) {
+                if ('length' in this.filters) {
+                    this.addFilter('outline', new OutlineFilter({ thickness: 5, color: 'yellow' }));
+                }
+                this.cursor = "grab";
             }
-            this.cursor = "grab"
             gm.target = this;
 
         });
@@ -174,11 +176,8 @@ export default class Stack extends GameObject implements IDraggable, IStackable,
 
     serialize(): SerializedObject {
         return {
+            ...super.serialize(),
             type: 'stack',
-            id: this.id,
-            x: this.x,
-            y: this.y,
-            angle: this.angle,
             items: this.items.map(i => i.id),
         }
     }

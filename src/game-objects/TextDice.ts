@@ -45,11 +45,8 @@ export default class TextDice extends Dice implements IDraggable, IRollable {
 
     serialize(): SerializedObject {
         return {
+            ...super.serialize(),
             type: 'text-dice',
-            id: this.id,
-            x: this.x,
-            y: this.y,
-            angle: this.angle,
             size: this.size,
             value: this.value,
         }

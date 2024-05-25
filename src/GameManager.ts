@@ -1,4 +1,4 @@
-import { Application, Assets, Texture, Sprite, FederatedPointerEvent, Spritesheet, Text } from 'pixi.js';
+import { Application, Assets, Texture, Sprite, FederatedPointerEvent, Spritesheet, Text, EventsTicker } from 'pixi.js';
 import { DropShadowFilter, OutlineFilter } from "pixi-filters"
 import Camera from './game-objects/Camera';
 import { DataEventData, PeerRoom } from './PeerRoom';
@@ -30,6 +30,7 @@ export type SerializedObject = {
     x: number;
     y: number;
     angle: number;
+    locked: boolean;
 } & ({
     type: 'card';
     face: string;
@@ -45,7 +46,7 @@ export type SerializedObject = {
     type: 'dice' | 'text-dice';
     size: number;
     value: number,
-})
+} | { type: 'object' });
 
 const colors = [0xEE4B2B, 0x0096FF, 0xF0C05A, 0xffffff, 0xB163A3, 0x7F00FF]
 
@@ -246,6 +247,15 @@ export default class GameManager {
                             this.hands[message.handIndex].updateCardHidden(card, message.state);
                         }
                     }
+                    break;
+                case 'lock-object':
+                    if (address !== room.address()) {
+                        const object = this.gameObjects.get(message.target);
+                        if (object) {
+                            object.locked = message.locked;
+                        }
+                    }
+                    break;
 
             }
         });
@@ -258,32 +268,18 @@ export default class GameManager {
         resetUIDs(-100000);
         state.gameObjects.sort((a, b) => a.type.localeCompare(b.type));
         for (let obj of state.gameObjects) {
+            let createdObject: GameObject | null = null;
             if (obj.type === 'card') {
                 const card = new Card(GetTexture(obj.face), GetTexture(obj.back), obj.width, obj.height);
-                card.x = obj.x;
-                card.y = obj.y;
-                card.desiredPosition.x = obj.x;
-                card.desiredPosition.y = obj.y;
-                card.angle = obj.angle;
-                this.gameObjects.delete(card.id);
-                card.id = obj.id;
-                this.gameObjects.set(card.id, card);
                 if (obj.isFlipped) card.flip();
                 if (!obj.inStack) this.camera.addChild(card);
+                createdObject = card;
             }
             if (obj.type === 'stack') {
                 const cards = obj.items.map((i) => this.gameObjects.get(i)) as (GameObject & IStackable)[];
                 const stack = new Stack(cards);
-                stack.x = obj.x;
-                stack.y = obj.y;
-                stack.desiredPosition.x = obj.x;
-                stack.desiredPosition.y = obj.y;
-                stack.angle = obj.angle;
-                this.gameObjects.delete(stack.id);
-                stack.id = obj.id;
-                this.gameObjects.set(stack.id, stack);
-                stack.id = obj.id;
                 this.camera.addChild(stack);
+                createdObject = stack;
             }
             if (obj.type === 'dice' || obj.type === 'text-dice') {
                 const spritesheet = Assets.get<Spritesheet>(`d${obj.size}-sheet`);
@@ -296,17 +292,20 @@ export default class GameManager {
                         dice = new TextDice(spritesheet, obj.size);
                         break;
                 }
-                dice.x = obj.x;
-                dice.y = obj.y;
-                dice.desiredPosition.x = obj.x;
-                dice.desiredPosition.y = obj.y;
-                dice.angle = obj.angle;
-                this.gameObjects.delete(dice.id);
-                dice.id = obj.id;
-                this.gameObjects.set(dice.id, dice);
-                dice.id = obj.id;
                 this.camera.addChild(dice);
                 dice.value = obj.value;
+                createdObject = dice;
+            }
+            if (createdObject) {
+                createdObject.x = obj.x;
+                createdObject.y = obj.y;
+                createdObject.desiredPosition.x = obj.x;
+                createdObject.desiredPosition.y = obj.y;
+                createdObject.angle = obj.angle;
+                createdObject.locked = obj.locked;
+                this.gameObjects.delete(createdObject.id);
+                createdObject.id = obj.id;
+                this.gameObjects.set(createdObject.id, createdObject);
             }
         }
         for (let i = 0; i < state.hands.length; i++) {
@@ -421,6 +420,7 @@ export default class GameManager {
     }
 
     onDragStart(item: GameObject & IDraggable) {
+        if (item.locked) return;
         this.dragTarget = item;
         this.onMoveStart(item)
         this.room.send({
@@ -495,12 +495,12 @@ export default class GameManager {
 
     takeCardsToHand(amount: number) {
         const hand = this.hands.find((hand) => hand.player === this.room.address());
-        if (hand) {
-            if (this.target && this.target instanceof Card) {
+        if (hand && this.target && !this.target.locked) {
+            if (this.target instanceof Card) {
                 this.target.canStack = false;
                 hand.putCardAt(this.target as Card, hand.items.length)
             }
-            if (this.target && this.target instanceof Stack) {
+            if (this.target instanceof Stack) {
                 const mousePos = this.camera.screenToWorldPoint(Controls.instance.mouse.position);
                 for (let i = 0; i < amount; i++) {
                     if (this.target.items.length > 1) {
@@ -572,6 +572,7 @@ export default class GameManager {
             })
         })
 
+        console.log(EventsTicker.interactionFrequency = 1)
         this.app.stage.eventMode = 'dynamic';
         this.app.stage.hitArea = this.app.screen;
 
@@ -625,8 +626,21 @@ export default class GameManager {
                 this.tooltip.text = '';
             }
 
+            if (Controls.instance.keyboard.get('l') === KeyState.PRESSED) {
+                if (currentTarget) {
+                    currentTarget.locked = !currentTarget.locked;
+                    this.room.send({
+                        type: 'lock-object',
+                        message: {
+                            target: currentTarget.id,
+                            locked: currentTarget.locked,
+                        }
+                    })
+                }
+            }
+
             if (Controls.instance.keyboard.get('f') === KeyState.PRESSED) {
-                if (currentTarget && isIFlipable(currentTarget)) {
+                if (currentTarget && !currentTarget.locked && isIFlipable(currentTarget)) {
                     currentTarget.flip();
                     this.room.send({
                         type: 'flip-object',
@@ -641,7 +655,7 @@ export default class GameManager {
                 const seed = Date.now();
                 const randSeeded = rand(seed);
 
-                if (currentTarget && isIRollable(currentTarget)) {
+                if (currentTarget && !currentTarget.locked && isIRollable(currentTarget)) {
                     currentTarget.roll(randSeeded);
                     this.room.send({
                         type: 'roll-object',
@@ -708,7 +722,7 @@ export default class GameManager {
                 if (Controls.instance.keyboard.get(' ') === KeyState.HELD) {
                     this.camera.angle -= angle * ticker.deltaTime;
                 } else {
-                    if (currentTarget) {
+                    if (currentTarget && !currentTarget.locked) {
                         currentTarget.angle += angle * ticker.deltaTime * 2;
                         this.room.send({
                             type: 'rotate-object',

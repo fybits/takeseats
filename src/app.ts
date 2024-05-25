@@ -430,13 +430,14 @@ export const GetTexture = (key: string) => {
                     await spritesheet.parse();
                     Assets.cache.set(`${spritesheetFile.name}-sheet`, spritesheet);
 
-                    const backUrl = await getDataURL(backFile);
-                    Assets.add({ alias: backFile.name, src: backUrl });
-                    await Assets.load<Texture>([backFile.name]);
-
                     itemsToSend = [{ alias: spritesheetFile.name, spritesheetData, src: spriteSheetTextureUrl }]
 
+
+
                     if (isBackSeparate) {
+                        const backUrl = await getDataURL(backFile);
+                        Assets.add({ alias: backFile.name, src: backUrl });
+                        await Assets.load<Texture>([backFile.name]);
                         itemsToSend.push({ alias: backFile.name, src: backUrl });
                     }
                 }

@@ -28,6 +28,7 @@ export type DataEventData =
     | { type: 'player-choose-hand', message: { handIndex: number } }
     | { type: 'player-disconnected', message: null }
     | { type: 'update-card-hidden', message: { card_id: number, handIndex: number, state: 'enter' | 'leave' } }
+    | { type: 'lock-object', message: { target: number, locked: boolean } }
 
 export class PeerRoom {
     private members: DataConnection[] = [];

@@ -14,6 +14,7 @@ export default abstract class GameObject extends Container implements IUpdatable
     baseZindex: number;
     force: Vector;
     friction: number;
+    locked: boolean;
 
     constructor() {
         super();
@@ -22,6 +23,7 @@ export default abstract class GameObject extends Container implements IUpdatable
         this.baseZindex = 0;
         this.force = new Vector();
         this.friction = 1;
+        this.locked = false;
 
         this.filters = [];
         this.filtersMap = new Map<string, Filter>();
@@ -72,7 +74,16 @@ export default abstract class GameObject extends Container implements IUpdatable
         return '';
     }
 
-    abstract serialize(): SerializedObject;
+    serialize(): SerializedObject {
+        return {
+            type: 'object',
+            id: this.id,
+            x: this.x,
+            y: this.y,
+            locked: this.locked,
+            angle: this.angle,
+        }
+    }
 
     abstract reloadTextures(): void;
 }
