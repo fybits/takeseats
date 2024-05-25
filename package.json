@@ -24,6 +24,7 @@
     "process": "^0.11.10"
   },
   "dependencies": {
+    "@pixi/sound": "^6.0.0",
     "file-saver": "^2.0.5",
     "jszip": "^3.10.1",
     "peerjs": "^1.5.2",

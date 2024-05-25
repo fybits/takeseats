@@ -1,6 +1,7 @@
 import { Graphics, Sprite, Texture } from "pixi.js";
 import { Vector } from "../utils/Vector";
 import IUpdatable from "../game-objects/interfaces/IUpdatable";
+import { sound } from "@pixi/sound";
 
 export default class Ping extends Sprite implements IUpdatable {
     animCount: number = 0;
@@ -18,6 +19,7 @@ export default class Ping extends Sprite implements IUpdatable {
 
         this.scale.x = 0.08 / gm.camera.scale.x
         this.scale.y = 0.08 / gm.camera.scale.y;
+        sound.play('ping');
         if (!silent) {
             gm.room.send({
                 type: 'ping-point',

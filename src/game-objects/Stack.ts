@@ -9,6 +9,7 @@ import Controls, { KeyState } from "../Controls";
 import { SerializedObject } from "../GameManager";
 import { GetTexture } from "../app";
 import { Vector } from "../utils/Vector";
+import { sound } from "@pixi/sound";
 
 export default class Stack extends GameObject implements IDraggable, IStackable, IFlipable, IRollable {
     items: (GameObject & IStackable)[];
@@ -79,6 +80,7 @@ export default class Stack extends GameObject implements IDraggable, IStackable,
             this.items[i] = this.items[j];
             this.items[j] = temp;
         }
+        sound.play('shuffle');
         this.updateGraphics();
     }
 

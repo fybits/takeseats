@@ -19,6 +19,7 @@ import Ping from './effects/Ping';
 import Hand from './game-objects/Hand';
 import Dice from './game-objects/Dice';
 import TextDice from './game-objects/TextDice';
+import { sound } from '@pixi/sound';
 
 interface Player {
     position: Vector;
@@ -410,12 +411,14 @@ export default class GameManager {
         if (!target.parent) {
             this.camera.addChild(target);
         }
+        sound.play('pick');
         target.addFilter('shadow', new DropShadowFilter({ blur: 4, offset: { x: 8, y: 30 }, pixelSize: { x: 1, y: 1 }, quality: 8 }))
 
     }
     onMoveEnd(target: GameObject) {
         target.eventMode = 'static';
         target.zIndex = target.baseZindex;
+        sound.play('pick');
         target.removeFilter('shadow');
     }
 

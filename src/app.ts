@@ -14,6 +14,7 @@ import dragElement from './ui/drag-element';
 import Dice from './game-objects/Dice';
 import { button, form, toggle } from './ui';
 import TextDice from './game-objects/TextDice';
+import { sound } from '@pixi/sound';
 
 declare global {
     var gm: GameManager;
@@ -122,6 +123,13 @@ export const GetTexture = (key: string) => {
         'd12-sheet',
         'd20-sheet',
     ]);
+
+    sound.add('ping', { url: 'assets/sounds/ping.mp3', volume: 1 });
+    sound.add('roll', { url: 'assets/sounds/roll-dice.mp3', volume: 0.8 });
+    sound.add('pick', { url: 'assets/sounds/pick.mp3', volume: 0.3 });
+    sound.add('shuffle', { url: 'assets/sounds/card-shuffle.mp3', volume: 0.8 });
+
+
     const connectToLobby = (nickname: string, lobbyKey?: string) => {
         localStorage.setItem('nickname', nickname);
         room = new PeerRoom(nickname);

@@ -3,6 +3,7 @@ import IDraggable from "./interfaces/IDraggable";
 import { SerializedObject } from "../GameManager";
 import IRollable from "./interfaces/IRollable";
 import Dice from "./Dice";
+import { sound } from "@pixi/sound";
 
 export default class TextDice extends Dice implements IDraggable, IRollable {
     currentGraphics: AnimatedSprite;
@@ -37,6 +38,7 @@ export default class TextDice extends Dice implements IDraggable, IRollable {
     roll(randSeeded: () => number): void {
         this.currentGraphics.play()
         this.text.text = '';
+        sound.play('roll');
         setTimeout(() => {
             this.value = Math.floor(randSeeded() * this.size) + 1;
             this.angle = randSeeded() * 360;
