@@ -509,7 +509,7 @@ export default class GameManager {
                     this.room.send({
                         type: 'move-end-object', message: {
                             target: item.id,
-                            position: newDesiredPos,
+                            position: item.desiredPosition,
                             force: force,
                         }
                     });
@@ -573,7 +573,6 @@ export default class GameManager {
         this.tooltip.zIndex = 1400;
         this.tooltip.eventMode = 'none';
         this.tooltip.style.fill = 0xffffff;
-        // this.tooltip.style.dropShadow = true;
         this.tooltip.anchor = { x: 0.5, y: 1 };
         this.app.stage.addChild(this.tooltip);
 
@@ -703,8 +702,7 @@ export default class GameManager {
 
                 if (currentTargets[0] && !currentTargets[0].destroyed) {
                     this.tooltip.position = this.app.stage.toLocal({ x: currentTargets[0].x, y: currentTargets[0].y + currentTargets[0].getLocalBounds().top }, currentTargets[0].parent);
-                    if (currentTargets.length > 1) {
-                        console.log(`${values.join(' + ')} = ${total}`)
+                    if (currentTargets.length > 1 && currentTargets.every((item) => item instanceof Dice)) {
                         this.tooltip.text = `${values.join(' + ')} = ${total}`;
                     } else {
                         this.tooltip.text = currentTargets[0].toString();

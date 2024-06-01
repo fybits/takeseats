@@ -56,8 +56,8 @@ export default abstract class GameObject extends Container implements IUpdatable
     Update(dt: number) {
         this.force.x -= (this.force.x * this.friction) * dt;
         this.force.y -= (this.force.y * this.friction) * dt;
-        this.desiredPosition.x = this.desiredPosition.x + this.force.x;
-        this.desiredPosition.y = this.desiredPosition.y + this.force.y;
+        this.desiredPosition.x = this.desiredPosition.x + this.force.x * dt * 2;
+        this.desiredPosition.y = this.desiredPosition.y + this.force.y * dt * 2;
         const dx = this.desiredPosition.x - this.x;
         const dy = this.desiredPosition.y - this.y;
         this.x += dx * dt / 2;
