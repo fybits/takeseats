@@ -66,40 +66,53 @@ export default class Hand extends Container implements IUpdatable {
         const clamp = (val: number, min: number, max: number) => Math.min(Math.max(val, min), max)
 
         this.on('pointerup', (event) => {
-            if (gm.targets[0] && gm.targets[0] instanceof Card) {
-                const x = this.itemsContainer.toLocal(event.global).x;
-                const ratio = clamp(x + gm.targets[0].width / 2, 0, this.itemsContainer.width) / this.itemsContainer.width;
-                const index = Math.round(ratio * this.itemsContainer.children.length);
-                this.putCardAt(gm.targets[0], index);
-                gm.room.send({
-                    type: 'put-card-in-hand', message: {
-                        card_id: gm.targets[0].id,
-                        index,
-                        handIndex: gm.hands.findIndex((hand) => hand === this)
+            if (gm.dragInfo.isDragging) {
+                gm.targets.forEach((target) => {
+                    if (target && target instanceof Card) {
+                        const x = this.itemsContainer.toLocal(event.global).x;
+                        const ratio = clamp(x + target.width / 2, 0, this.itemsContainer.width) / this.itemsContainer.width;
+                        const index = Math.round(ratio * this.itemsContainer.children.length);
+                        this.putCardAt(target, index);
+                        gm.room.send({
+                            type: 'put-card-in-hand', message: {
+                                card_id: target.id,
+                                index,
+                                handIndex: gm.hands.findIndex((hand) => hand === this)
+                            }
+                        })
                     }
                 })
             }
         });
         this.on('pointerenter', () => {
-            if (gm.targets[0] && gm.targets[0] instanceof Card) {
-                this.updateCardHidden(gm.targets[0], 'enter')
-                gm.room.send({
-                    type: 'update-card-hidden', message: {
-                        card_id: gm.targets[0].id,
-                        state: 'enter',
-                        handIndex: gm.hands.findIndex((hand) => hand === this)
+            if (gm.dragInfo.isDragging) {
+                gm.targets.forEach((target) => {
+                    if (target && target instanceof Card) {
+                        this.updateCardHidden(target, 'enter')
+                        gm.room.send({
+                            type: 'update-card-hidden', message: {
+                                card_id: target.id,
+                                state: 'enter',
+                                handIndex: gm.hands.findIndex((hand) => hand === this)
+                            }
+                        })
                     }
+
                 })
             }
         })
         this.on('pointerleave', () => {
-            if (gm.targets[0] && gm.targets[0] instanceof Card) {
-                this.updateCardHidden(gm.targets[0], 'leave')
-                gm.room.send({
-                    type: 'update-card-hidden', message: {
-                        card_id: gm.targets[0].id,
-                        state: 'leave',
-                        handIndex: gm.hands.findIndex((hand) => hand === this)
+            if (gm.dragInfo.isDragging) {
+                gm.targets.forEach((target) => {
+                    if (target && target instanceof Card) {
+                        this.updateCardHidden(target, 'leave')
+                        gm.room.send({
+                            type: 'update-card-hidden', message: {
+                                card_id: target.id,
+                                state: 'leave',
+                                handIndex: gm.hands.findIndex((hand) => hand === this)
+                            }
+                        })
                     }
                 })
             }

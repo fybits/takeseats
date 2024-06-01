@@ -32,14 +32,18 @@ export default class Stack extends GameObject implements IDraggable, IStackable,
             this.onDragStart();
         });
         this.on('pointerup', () => {
-            if (gm.targets[0] && isIStackable(gm.targets[0])) {
-                const objectToStack = gm.targets[0];
-                this.onStack(objectToStack);
-                gm.room.send({
-                    type: 'stack-object',
-                    message: {
-                        target: this.id,
-                        object_to_stack: objectToStack.id,
+            if (gm.dragInfo.isDragging) {
+                gm.targets.forEach((target) => {
+                    if (target && isIStackable(target)) {
+                        const objectToStack = target;
+                        this.onStack(objectToStack);
+                        gm.room.send({
+                            type: 'stack-object',
+                            message: {
+                                target: this.id,
+                                object_to_stack: objectToStack.id,
+                            }
+                        })
                     }
                 })
             }
@@ -152,7 +156,7 @@ export default class Stack extends GameObject implements IDraggable, IStackable,
                     type: 'take-object-from-stack',
                     message: {
                         target: this.id,
-                        object_from_stack: item?.id,
+                        object_from_stack: item.id,
                         point: mouseWorldPos,
                     }
                 })
@@ -166,7 +170,7 @@ export default class Stack extends GameObject implements IDraggable, IStackable,
     }
     onDragEnd(): void {
     }
-    onStack(item: (GameObject & IStackable)): void {
+    onStack(item: (GameObject & IStackable)): Stack {
         const newItems = item.getItems()
         newItems.forEach(i => i.stack = this);
         this.items.push(...newItems);
@@ -179,6 +183,7 @@ export default class Stack extends GameObject implements IDraggable, IStackable,
         if (item instanceof Stack) {
             item.destroy();
         }
+        return this;
     }
 
     serialize(): SerializedObject {

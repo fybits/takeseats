@@ -44,16 +44,24 @@ export default class Card extends GameObject implements IDraggable, IStackable, 
         this.eventMode = 'static';
         this.on('pointerdown', this.onDragStart);
         this.on('pointerup', () => {
-            if (!this.locked && this.canStack && gm.targets[0] && isIStackable(gm.targets[0])) {
-                const objectToStack = gm.targets[0];
-                this.onStack(objectToStack);
-                gm.room.send({
-                    type: 'stack-object',
-                    message: {
-                        target: this.id,
-                        object_to_stack: objectToStack.id,
-                    }
-                })
+            if (!this.locked && this.canStack) {
+                if (gm.dragInfo.isDragging) {
+                    let stack: GameObject & IStackable = this;
+                    gm.targets.forEach((target) => {
+                        if (target && isIStackable(target)) {
+                            const objectToStack = target;
+                            const newStack = stack.onStack(objectToStack);
+                            gm.room.send({
+                                type: 'stack-object',
+                                message: {
+                                    target: stack.id,
+                                    object_to_stack: objectToStack.id,
+                                }
+                            })
+                            stack = newStack;
+                        }
+                    })
+                }
             }
         });
         this.on('pointerover', () => {
@@ -126,7 +134,7 @@ export default class Card extends GameObject implements IDraggable, IStackable, 
         return [this];
     }
 
-    onStack(item: GameObject & IStackable): void {
+    onStack(item: GameObject & IStackable): Stack {
         const stack = new Stack([this, ...item.getItems()])
         const parent = this.parent;
         this.removeFromParent();
@@ -140,6 +148,7 @@ export default class Card extends GameObject implements IDraggable, IStackable, 
         stack.desiredPosition.x = this.x;
         stack.desiredPosition.y = this.y;
         stack.angle = this.angle;
+        return stack;
     }
 
     onDragStart(): void {

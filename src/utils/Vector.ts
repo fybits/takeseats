@@ -26,4 +26,8 @@ export class Vector {
     static distance(a: Vector, b: Vector): number {
         return new Vector(b.x - a.x, b.y - a.y).length;
     }
+
+    copy(): Vector {
+        return new Vector(this.x, this.y);
+    }
 }
