@@ -37,15 +37,15 @@ export default class Dice extends GameObject implements IDraggable, IRollable {
 
         this.on('pointerover', () => {
             if (!this.locked) {
-                this.addFilter('outline', new OutlineFilter({ thickness: 5, color: 'yellow' }));
+                this.addFilter('hover-outline', new OutlineFilter({ thickness: 5, color: 'yellow' }));
                 this.cursor = "grab";
             }
             this.cursor = "grab";
-            gm.target = this;
+            gm.hoverTarget = this;
         });
         this.on('pointerout', () => {
-            this.removeFilter('outline');
-            gm.target = null;
+            this.removeFilter('hover-outline');
+            gm.hoverTarget = null;
         });
         this.addFilter('dice-shadow', new DropShadowFilter({ blur: 2, offset: { x: 4, y: 20 }, pixelSize: { x: 1, y: 1 } }));
     }

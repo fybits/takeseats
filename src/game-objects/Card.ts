@@ -44,27 +44,28 @@ export default class Card extends GameObject implements IDraggable, IStackable, 
         this.eventMode = 'static';
         this.on('pointerdown', this.onDragStart);
         this.on('pointerup', () => {
-            if (!this.locked && this.canStack && gm.dragTarget && isIStackable(gm.dragTarget)) {
-                this.onStack(gm.dragTarget);
+            if (!this.locked && this.canStack && gm.targets[0] && isIStackable(gm.targets[0])) {
+                const objectToStack = gm.targets[0];
+                this.onStack(objectToStack);
                 gm.room.send({
                     type: 'stack-object',
                     message: {
                         target: this.id,
-                        object_to_stack: gm.dragTarget.id,
+                        object_to_stack: objectToStack.id,
                     }
                 })
             }
         });
         this.on('pointerover', () => {
             if (!this.locked) {
-                this.addFilter('outline', new OutlineFilter({ thickness: 5, color: 'yellow' }));
+                this.addFilter('hover-outline', new OutlineFilter({ thickness: 5, color: 'yellow' }));
                 this.cursor = "grab";
             }
-            gm.target = this;
+            gm.hoverTarget = this;
         });
         this.on('pointerout', () => {
-            this.removeFilter('outline');
-            gm.target = null;
+            this.removeFilter('hover-outline');
+            gm.hoverTarget = null;
         });
     }
     onTakeFromStack(): GameObject | null {

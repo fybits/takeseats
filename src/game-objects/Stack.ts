@@ -32,13 +32,14 @@ export default class Stack extends GameObject implements IDraggable, IStackable,
             this.onDragStart();
         });
         this.on('pointerup', () => {
-            if (gm.dragTarget && isIStackable(gm.dragTarget)) {
-                this.onStack(gm.dragTarget);
+            if (gm.targets[0] && isIStackable(gm.targets[0])) {
+                const objectToStack = gm.targets[0];
+                this.onStack(objectToStack);
                 gm.room.send({
                     type: 'stack-object',
                     message: {
                         target: this.id,
-                        object_to_stack: gm.dragTarget.id,
+                        object_to_stack: objectToStack.id,
                     }
                 })
             }
@@ -46,18 +47,18 @@ export default class Stack extends GameObject implements IDraggable, IStackable,
         this.on('pointerover', () => {
             if (!this.locked) {
                 if ('length' in this.filters) {
-                    this.addFilter('outline', new OutlineFilter({ thickness: 5, color: 'yellow' }));
+                    this.addFilter('hover-outline', new OutlineFilter({ thickness: 5, color: 'yellow' }));
                 }
                 this.cursor = "grab";
             }
-            gm.target = this;
+            gm.hoverTarget = this;
 
         });
         this.on('pointerout', () => {
             if ('length' in this.filters) {
-                this.removeFilter('outline');
+                this.removeFilter('hover-outline');
             }
-            gm.target = null;
+            gm.hoverTarget = null;
         });
 
 
@@ -169,6 +170,10 @@ export default class Stack extends GameObject implements IDraggable, IStackable,
         const newItems = item.getItems()
         newItems.forEach(i => i.stack = this);
         this.items.push(...newItems);
+        gm.targets = gm.targets.filter((i) => {
+            if (isIStackable(i)) return i.stack === null;
+            return true;
+        })
         this.updateGraphics();
         item.removeFromParent();
         if (item instanceof Stack) {

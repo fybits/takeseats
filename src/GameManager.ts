@@ -1,4 +1,4 @@
-import { Application, Assets, Texture, Sprite, FederatedPointerEvent, Spritesheet, Text, EventsTicker } from 'pixi.js';
+import { Application, Assets, Texture, Sprite, FederatedPointerEvent, Spritesheet, Text, EventsTicker, Graphics, Bounds, removeItems } from 'pixi.js';
 import { DropShadowFilter, OutlineFilter } from "pixi-filters"
 import Camera from './game-objects/Camera';
 import { DataEventData, PeerRoom } from './PeerRoom';
@@ -381,8 +381,9 @@ export default class GameManager {
         }
     }
 
-    dragTarget: (GameObject & IDraggable) | null;
-    target: GameObject | null;
+    dragInfo: { isDragging: boolean, offsets: Map<number, Vector> } = { isDragging: false, offsets: new Map() };
+    targets: GameObject[] = [];
+    hoverTarget: GameObject | null = null;
     tooltip: Text;
 
     onMoveStart(target: GameObject) {
@@ -422,92 +423,117 @@ export default class GameManager {
         target.removeFilter('shadow');
     }
 
+
+
     onDragStart(item: GameObject & IDraggable) {
-        if (item.locked) return;
-        this.dragTarget = item;
-        this.onMoveStart(item)
-        this.room.send({
-            type: 'move-start-object', message: {
-                target: this.dragTarget.id,
+        if (!this.targets.includes(item)) {
+            this.targets.forEach((i) => i.removeFilter('outline'));
+            this.targets.length = 0;
+            this.targets.push(item);
+        }
+        this.targets.forEach(item => {
+            if (item.locked) return;
+            if (isIDraggable(item)) {
+                const mouseWorld = this.camera.screenToWorldPoint(Controls.instance.mouse.position);
+                this.dragInfo.offsets.set(item.id, new Vector(item.x - mouseWorld.x, item.y - mouseWorld.y));
+                this.onMoveStart(item)
+                this.room.send({
+                    type: 'move-start-object', message: {
+                        target: item.id,
+                    }
+                });
             }
-        });
+        })
+        this.dragInfo.isDragging = true;
         this.app.stage.on('pointermove', this.onDragMove, this);
     }
 
     onDragMove(event: FederatedPointerEvent) {
-        if (this.dragTarget) {
-            if (this.dragTarget.parent) {
-                const center = this.camera.screenToWorldPoint(new Vector(event.screen.x, event.screen.y));
-                this.dragTarget.desiredPosition.x = center.x;
-                this.dragTarget.desiredPosition.y = center.y;
-            } else {
-                this.onDragEnd(event);
-            }
-            this.dragTarget.onDrag()
-            this.room.send({
-                type: 'move-object', message: {
-                    target: this.dragTarget.id,
-                    position: new Vector(this.dragTarget.x, this.dragTarget.y),
+        if (this.dragInfo.isDragging === false) return;
+        this.targets.forEach(item => {
+
+            if (isIDraggable(item)) {
+                if (item.parent) {
+                    const center = this.camera.screenToWorldPoint(new Vector(event.screen.x, event.screen.y));
+                    const offset = this.dragInfo.offsets.get(item.id)!;
+                    item.desiredPosition.x = center.x + offset.x;
+                    item.desiredPosition.y = center.y + offset.y;
+                } else {
+                    this.onDragEnd(event);
                 }
-            })
-        }
+                item.onDrag()
+                this.room.send({
+                    type: 'move-object', message: {
+                        target: item.id,
+                        position: new Vector(item.x, item.y),
+                    }
+                })
+            }
+        })
     }
 
     onDragEnd(event) {
-        if (this.dragTarget) {
-            if (!this.dragTarget.destroyed) {
-                this.dragTarget.onDragEnd();
-                const newDesiredPos = this.camera.screenToWorldPoint(new Vector(event.screen.x, event.screen.y));
-                this.dragTarget.desiredPosition = newDesiredPos;
-                const force = new Vector();
-                const mouseMovement = Controls.instance.mouse.movement;
-                if (mouseMovement.length > 2) {
-                    const dir = mouseMovement.normalized;
-                    const len = Math.min(mouseMovement.length, 5);
-                    force.x = dir.x * len * 10;
-                    force.y = dir.y * len * 10;
-                    this.dragTarget.force = force;
-                    if (this.dragTarget instanceof Dice) {
-                        const seed = Date.now();
-                        const randSeeded = rand(seed);
-                        if (this.dragTarget && isIRollable(this.dragTarget)) {
-                            this.dragTarget.roll(randSeeded);
-                            this.room.send({
-                                type: 'roll-object',
-                                message: {
-                                    target: this.dragTarget.id,
-                                    seed: seed,
-                                }
-                            })
+        if (this.dragInfo.isDragging === false) return;
+        this.targets.forEach(item => {
+            if (isIDraggable(item)) {
+                if (!item.destroyed) {
+                    item.onDragEnd();
+                    const newDesiredPos = this.camera.screenToWorldPoint(new Vector(event.screen.x, event.screen.y));
+                    const offset = this.dragInfo.offsets.get(item.id)!;
+                    item.desiredPosition.x = newDesiredPos.x + offset.x;
+                    item.desiredPosition.y = newDesiredPos.y + offset.y;
+                    const force = new Vector();
+                    const mouseMovement = Controls.instance.mouse.movement;
+                    if (mouseMovement.length > 2) {
+                        const dir = mouseMovement.normalized;
+                        const len = Math.min(mouseMovement.length, 5);
+                        force.x = dir.x * len * 10;
+                        force.y = dir.y * len * 10;
+                        item.force = force;
+                        if (item instanceof Dice) {
+                            const seed = Date.now() + item.id;
+                            const randSeeded = rand(seed);
+                            if (item && isIRollable(item)) {
+                                item.roll(randSeeded);
+                                this.room.send({
+                                    type: 'roll-object',
+                                    message: {
+                                        target: item.id,
+                                        seed: seed,
+                                    }
+                                })
+                            }
                         }
                     }
+                    this.onMoveEnd(item);
+                    this.room.send({
+                        type: 'move-end-object', message: {
+                            target: item.id,
+                            position: newDesiredPos,
+                            force: force,
+                        }
+                    });
                 }
-                this.onMoveEnd(this.dragTarget);
-                this.room.send({
-                    type: 'move-end-object', message: {
-                        target: this.dragTarget.id,
-                        position: newDesiredPos,
-                        force: force,
-                    }
-                });
             }
-            this.app.stage.off('pointermove', this.onDragMove, this);
-            this.dragTarget = null;
-        }
+        })
+        this.app.stage.off('pointermove', this.onDragMove, this);
+        if (this.targets.length === 1) this.targets.length = 0;
+        this.dragInfo.isDragging = false;
     }
 
     takeCardsToHand(amount: number) {
         const hand = this.hands.find((hand) => hand.player === this.room.address());
-        if (hand && this.target && !this.target.locked) {
-            if (this.target instanceof Card) {
-                this.target.canStack = false;
-                hand.putCardAt(this.target as Card, hand.items.length)
+        const currentTarget = this.targets[0] || this.hoverTarget;
+        if (hand && currentTarget && !currentTarget.locked && hand.items.indexOf(currentTarget as Card) === -1) {
+            if (currentTarget instanceof Card) {
+                currentTarget.canStack = false;
+                hand.putCardAt(currentTarget as Card, hand.items.length)
             }
-            if (this.target instanceof Stack) {
+            if (currentTarget instanceof Stack) {
                 const mousePos = this.camera.screenToWorldPoint(Controls.instance.mouse.position);
                 for (let i = 0; i < amount; i++) {
-                    if (this.target.items.length > 1) {
-                        const item = this.target.onTakeFromStack(this.target.items[this.target.items.length - 1], mousePos);
+                    if (currentTarget.items.length > 1) {
+                        const item = currentTarget.onTakeFromStack(currentTarget.items[currentTarget.items.length - 1], mousePos);
                         hand.putCardAt(item as Card, hand.items.length)
                     }
                 }
@@ -547,7 +573,7 @@ export default class GameManager {
         this.tooltip.zIndex = 1400;
         this.tooltip.eventMode = 'none';
         this.tooltip.style.fill = 0xffffff;
-        this.tooltip.style.dropShadow = true;
+        // this.tooltip.style.dropShadow = true;
         this.tooltip.anchor = { x: 0.5, y: 1 };
         this.app.stage.addChild(this.tooltip);
 
@@ -556,6 +582,51 @@ export default class GameManager {
         this.peekView.zIndex = 1500;
         this.peekView.anchor = { x: 1, y: 0.5 };
         this.app.stage.addChild(this.peekView);
+
+        const selectionBox = new Graphics();
+        selectionBox.rect(0, 0, 10, 10).fill({ color: 0x00ff00, alpha: 0.1 });
+        this.camera.addChild(selectionBox);
+
+        let selectionFirstPoint: Vector | null = null;
+
+        this.app.stage.on('pointerdown', (event) => {
+            const local = this.camera.toLocal(event.global);
+            selectionFirstPoint = new Vector(local.x, local.y);
+            selectionBox.angle = -this.camera.angle;
+        })
+        this.app.stage.on('pointerup', (event) => {
+            selectionFirstPoint = null;
+        })
+        this.app.stage.on('pointermove', (event) => {
+            if (selectionFirstPoint !== null && !this.dragInfo.isDragging) {
+                const local = this.camera.toLocal(event.global);
+                const minX = Math.min(local.x, selectionFirstPoint.x);
+                const minY = Math.min(local.y, selectionFirstPoint.y);
+                const maxX = Math.max(local.x, selectionFirstPoint.x);
+                const maxY = Math.max(local.y, selectionFirstPoint.y);
+                selectionBox.x = minX;
+                selectionBox.y = minY;
+                selectionBox.width = maxX - minX;
+                selectionBox.height = maxY - minY;
+                const bounds = selectionBox.getBounds(true);
+
+                this.targets.length = 0;
+                this.gameObjects.forEach((go) => {
+                    if (go.parent) {
+                        const global = go.parent.toGlobal(go.position);
+                        if (bounds.containsPoint(global.x, global.y)) {
+                            go.addFilter('outline', new OutlineFilter({ thickness: 5, color: 'red' }));
+                            this.targets.push(go);
+                        } else {
+                            go.removeFilter('outline');
+                        }
+                    }
+                })
+            } else {
+                selectionBox.width = 1;
+                selectionBox.height = 1;
+            }
+        })
 
         this.app.stage.on('pointerup', this.onDragEnd, this);
         this.app.stage.on('pointerupoutside', this.onDragEnd, this);
@@ -620,123 +691,141 @@ export default class GameManager {
             if (Controls.instance.keyboard.get('d') === KeyState.HELD)
                 input.x += 1;
 
-            const currentTarget = this.dragTarget || this.target;
+            const currentTargets = [...this.targets];
+            if (this.hoverTarget && !currentTargets.includes(this.hoverTarget)) currentTargets.push(this.hoverTarget);
 
-            if (currentTarget && !currentTarget.destroyed) {
-                this.tooltip.position = this.app.stage.toLocal({ x: currentTarget.x, y: currentTarget.y + currentTarget.getLocalBounds().top }, currentTarget.parent);
-                this.tooltip.text = currentTarget.toString();
-            } else {
-                this.tooltip.text = '';
-            }
+            if (currentTargets.length > 0) {
+                let total = 0;
+                const values = currentTargets.map((item) => {
+                    return +item.toString();
+                });
+                total = values.reduce((total, current) => total + current);
 
-            if (Controls.instance.keyboard.get('l') === KeyState.PRESSED) {
-                if (currentTarget) {
-                    currentTarget.locked = !currentTarget.locked;
-                    this.room.send({
-                        type: 'lock-object',
-                        message: {
-                            target: currentTarget.id,
-                            locked: currentTarget.locked,
-                        }
-                    })
-                }
-            }
-
-            if (Controls.instance.keyboard.get('f') === KeyState.PRESSED) {
-                if (currentTarget && !currentTarget.locked && isIFlipable(currentTarget)) {
-                    currentTarget.flip();
-                    this.room.send({
-                        type: 'flip-object',
-                        message: {
-                            target: currentTarget.id,
-                        }
-                    })
-                }
-            }
-
-            if (Controls.instance.keyboard.get('r') === KeyState.PRESSED) {
-                const seed = Date.now();
-                const randSeeded = rand(seed);
-
-                if (currentTarget && !currentTarget.locked && isIRollable(currentTarget)) {
-                    currentTarget.roll(randSeeded);
-                    this.room.send({
-                        type: 'roll-object',
-                        message: {
-                            target: currentTarget.id,
-                            seed: seed,
-                        }
-                    })
-                }
-            }
-
-            let angle = 0
-            if (Controls.instance.keyboard.get('q') === KeyState.HELD)
-                angle -= 1;
-            if (Controls.instance.keyboard.get('e') === KeyState.HELD)
-                angle += 1;
-
-            if (Controls.instance.keyboard.get('alt') === KeyState.HELD) {
-                if (currentTarget) {
-                    this.peekView.texture = currentTarget.currentGraphics.texture;
-                    this.peekView.width = currentTarget.currentGraphics.width / currentTarget.currentGraphics.height * this.app.screen.height / 2;
-                    this.peekView.height = this.app.screen.height / 2;
-                }
-                this.peekView.scale.x = this.peekViewZoom;
-                this.peekView.scale.y = this.peekViewZoom;
-                this.peekView.x = this.app.screen.right - 100;
-                this.peekView.y = this.app.screen.height / 2;
-            } else {
-                this.peekView.texture = null!;
-            }
-
-            if (Controls.instance.keyboard.get('tab') === KeyState.PRESSED) {
-                const mousePos = this.camera.screenToWorldPoint(Controls.instance.mouse.position);
-                const myHand = this.hands.find((hand) => hand.player === this.room.address());
-                this.camera.addChild(new Ping(GetTexture('arrow'), mousePos.x, mousePos.y, 1500, myHand ? myHand.color : 0xffffff))
-            }
-
-            if (Controls.instance.keyboard.get('1') === KeyState.PRESSED) {
-                this.takeCardsToHand(1);
-            }
-            if (Controls.instance.keyboard.get('2') === KeyState.PRESSED) {
-                this.takeCardsToHand(2);
-            }
-            if (Controls.instance.keyboard.get('3') === KeyState.PRESSED) {
-                this.takeCardsToHand(3);
-            }
-            if (Controls.instance.keyboard.get('4') === KeyState.PRESSED) {
-                this.takeCardsToHand(4);
-            }
-            if (Controls.instance.keyboard.get('5') === KeyState.PRESSED) {
-                this.takeCardsToHand(5);
-            }
-            if (Controls.instance.keyboard.get('6') === KeyState.PRESSED) {
-                this.takeCardsToHand(6);
-            }
-            if (Controls.instance.keyboard.get('7') === KeyState.PRESSED) {
-                this.takeCardsToHand(7);
-            }
-            if (Controls.instance.keyboard.get('8') === KeyState.PRESSED) {
-                this.takeCardsToHand(8);
-            }
-
-            if (angle !== 0) {
-                if (Controls.instance.keyboard.get(' ') === KeyState.HELD) {
-                    this.camera.angle -= angle * ticker.deltaTime;
+                if (currentTargets[0] && !currentTargets[0].destroyed) {
+                    this.tooltip.position = this.app.stage.toLocal({ x: currentTargets[0].x, y: currentTargets[0].y + currentTargets[0].getLocalBounds().top }, currentTargets[0].parent);
+                    if (currentTargets.length > 1) {
+                        console.log(`${values.join(' + ')} = ${total}`)
+                        this.tooltip.text = `${values.join(' + ')} = ${total}`;
+                    } else {
+                        this.tooltip.text = currentTargets[0].toString();
+                    }
                 } else {
-                    if (currentTarget && !currentTarget.locked) {
-                        currentTarget.angle += angle * ticker.deltaTime * 2;
+                    this.tooltip.text = '';
+                }
+            }
+
+            currentTargets.forEach((target) => {
+                const currentTarget = target;
+
+                if (Controls.instance.keyboard.get('l') === KeyState.PRESSED) {
+                    if (currentTarget) {
+                        currentTarget.locked = !currentTarget.locked;
                         this.room.send({
-                            type: 'rotate-object',
+                            type: 'lock-object',
                             message: {
                                 target: currentTarget.id,
-                                angle: currentTarget.angle,
+                                locked: currentTarget.locked,
                             }
-                        });
+                        })
                     }
                 }
-            }
+
+                if (Controls.instance.keyboard.get('f') === KeyState.PRESSED) {
+                    if (currentTarget && !currentTarget.locked && isIFlipable(currentTarget)) {
+                        currentTarget.flip();
+                        this.room.send({
+                            type: 'flip-object',
+                            message: {
+                                target: currentTarget.id,
+                            }
+                        })
+                    }
+                }
+
+                if (Controls.instance.keyboard.get('r') === KeyState.PRESSED) {
+                    const seed = Date.now() + currentTarget.id;
+                    const randSeeded = rand(seed);
+
+                    if (currentTarget && !currentTarget.locked && isIRollable(currentTarget)) {
+                        currentTarget.roll(randSeeded);
+                        this.room.send({
+                            type: 'roll-object',
+                            message: {
+                                target: currentTarget.id,
+                                seed: seed,
+                            }
+                        })
+                    }
+                }
+
+                let angle = 0
+                if (Controls.instance.keyboard.get('q') === KeyState.HELD)
+                    angle -= 1;
+                if (Controls.instance.keyboard.get('e') === KeyState.HELD)
+                    angle += 1;
+
+                if (Controls.instance.keyboard.get('alt') === KeyState.HELD) {
+                    if (currentTarget) {
+                        this.peekView.texture = currentTarget.currentGraphics.texture;
+                        this.peekView.width = currentTarget.currentGraphics.width / currentTarget.currentGraphics.height * this.app.screen.height / 2;
+                        this.peekView.height = this.app.screen.height / 2;
+                    }
+                    this.peekView.scale.x = this.peekViewZoom;
+                    this.peekView.scale.y = this.peekViewZoom;
+                    this.peekView.x = this.app.screen.right - 100;
+                    this.peekView.y = this.app.screen.height / 2;
+                } else {
+                    this.peekView.texture = null!;
+                }
+
+                if (Controls.instance.keyboard.get('tab') === KeyState.PRESSED) {
+                    const mousePos = this.camera.screenToWorldPoint(Controls.instance.mouse.position);
+                    const myHand = this.hands.find((hand) => hand.player === this.room.address());
+                    this.camera.addChild(new Ping(GetTexture('arrow'), mousePos.x, mousePos.y, 1500, myHand ? myHand.color : 0xffffff))
+                }
+
+                if (Controls.instance.keyboard.get('1') === KeyState.PRESSED) {
+                    this.takeCardsToHand(1);
+                }
+                if (Controls.instance.keyboard.get('2') === KeyState.PRESSED) {
+                    this.takeCardsToHand(2);
+                }
+                if (Controls.instance.keyboard.get('3') === KeyState.PRESSED) {
+                    this.takeCardsToHand(3);
+                }
+                if (Controls.instance.keyboard.get('4') === KeyState.PRESSED) {
+                    this.takeCardsToHand(4);
+                }
+                if (Controls.instance.keyboard.get('5') === KeyState.PRESSED) {
+                    this.takeCardsToHand(5);
+                }
+                if (Controls.instance.keyboard.get('6') === KeyState.PRESSED) {
+                    this.takeCardsToHand(6);
+                }
+                if (Controls.instance.keyboard.get('7') === KeyState.PRESSED) {
+                    this.takeCardsToHand(7);
+                }
+                if (Controls.instance.keyboard.get('8') === KeyState.PRESSED) {
+                    this.takeCardsToHand(8);
+                }
+
+                if (angle !== 0) {
+                    if (Controls.instance.keyboard.get(' ') === KeyState.HELD) {
+                        this.camera.angle -= angle * ticker.deltaTime;
+                    } else {
+                        if (currentTarget && !currentTarget.locked) {
+                            currentTarget.angle += angle * ticker.deltaTime * 2;
+                            this.room.send({
+                                type: 'rotate-object',
+                                message: {
+                                    target: currentTarget.id,
+                                    angle: currentTarget.angle,
+                                }
+                            });
+                        }
+                    }
+                }
+            })
             input.rotate(-this.camera.rotation);
             this.camera.desiredPosition.x += input.x * ticker.deltaTime * 20;
             this.camera.desiredPosition.y += input.y * ticker.deltaTime * 20;
