@@ -1,5 +1,5 @@
 import { DropShadowFilter } from "pixi-filters";
-import { Container, Graphics, Rectangle, Text } from "pixi.js";
+import { Container, Graphics, Rectangle, RenderTargetSystem, Text } from "pixi.js";
 import Card from "./Card";
 import IUpdatable from "./interfaces/IUpdatable";
 import { colorToHexString } from "../utils";
@@ -67,16 +67,20 @@ export default class Hand extends Container implements IUpdatable {
 
         this.on('pointerup', (event) => {
             if (gm.dragInfo.isDragging) {
+                gm.targets.sort((a, b) => this.toLocal(a).x - this.toLocal(b).x);
+                let index = 0;
+                if (gm.targets.length > 0) {
+                    const x = this.itemsContainer.toLocal(event.global).x;
+                    const ratio = clamp(x + gm.targets[0].width / 2, 0, this.itemsContainer.width || 10) / (this.itemsContainer.width || 10);
+                    index = Math.round(ratio * this.itemsContainer.children.length);
+                }
                 gm.targets.forEach((target) => {
                     if (target && target instanceof Card) {
-                        const x = this.itemsContainer.toLocal(event.global).x;
-                        const ratio = clamp(x + target.width / 2, 0, this.itemsContainer.width) / this.itemsContainer.width;
-                        const index = Math.round(ratio * this.itemsContainer.children.length);
                         this.putCardAt(target, index);
                         gm.room.send({
                             type: 'put-card-in-hand', message: {
                                 card_id: target.id,
-                                index,
+                                index: index++,
                                 handIndex: gm.hands.findIndex((hand) => hand === this)
                             }
                         })
