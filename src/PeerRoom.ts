@@ -4,7 +4,6 @@
 
 import { DataConnection, Peer } from 'peerjs'
 import { Vector } from './utils/Vector';
-import GameObject from './game-objects/GameObject';
 import { SerializedObject } from './GameManager';
 import { SpritesheetData, tilingBit } from 'pixi.js';
 

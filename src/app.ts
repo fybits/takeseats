@@ -1,5 +1,5 @@
 
-import { Application, Assets, Spritesheet, SpritesheetData, Texture, autoDetectRenderer, getTemporaryCanvasFromImage, loadTextures } from 'pixi.js';
+import { Application, Assets, Spritesheet, SpritesheetData, Texture } from 'pixi.js';
 import { DataEventData, PeerRoom } from './PeerRoom';
 import Controls from './Controls';
 import Camera from './game-objects/Camera';
@@ -11,7 +11,6 @@ import { currentID } from './utils/uniqueID';
 import JSZip, { JSZipObject } from 'jszip';
 import { saveAs } from 'file-saver';
 import dragElement from './ui/drag-element';
-import Dice from './game-objects/Dice';
 import { button, form, toggle } from './ui';
 import TextDice from './game-objects/TextDice';
 import { sound } from '@pixi/sound';
@@ -99,6 +98,9 @@ export const GetTexture = (key: string) => {
 (async () => {
 
     const app = new Application();
+    canvas.oncontextmenu = (event) => {
+        event.preventDefault();
+    }
     await app.init({ canvas: canvas, resizeTo: window, backgroundColor: '#1E553E', antialias: true, roundPixels: true });
     const camera = new Camera();
     app.stage.addChild(camera);

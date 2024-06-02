@@ -1,6 +1,6 @@
 import { AnimatedSprite, Spritesheet } from "pixi.js";
 import IDraggable from "./interfaces/IDraggable";
-import { DropShadowFilter, OutlineFilter } from "pixi-filters";
+import { DropShadowFilter } from "pixi-filters";
 import GameObject from "./GameObject";
 import { SerializedObject } from "../GameManager";
 import IRollable from "./interfaces/IRollable";

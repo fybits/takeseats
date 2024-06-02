@@ -13,7 +13,7 @@ export default class Camera extends Container implements IUpdatable {
         super();
         this.desiredPosition = new Vector(0, 0);
         this.zoom = 1;
-        this.desiredZoom = 1;
+        this.desiredZoom = 0.25;
     }
 
     screenToWorldPoint(screenPosition: Vector) {

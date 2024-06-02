@@ -1,6 +1,5 @@
 import { Graphics, Sprite, Texture } from "pixi.js";
 import IDraggable from "./interfaces/IDraggable";
-import { OutlineFilter } from "pixi-filters";
 import IStackable, { isIStackable } from "./interfaces/IStackable";
 import Stack from "./Stack";
 import GameObject from "./GameObject";
@@ -129,6 +128,7 @@ export default class Card extends GameObject implements IDraggable, IStackable, 
         this.removeFromParent();
         item.removeFromParent();
         if (item instanceof Stack) {
+            item.items = [];
             item.destroy();
         }
         parent.addChild(stack);

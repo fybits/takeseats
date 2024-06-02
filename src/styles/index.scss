@@ -5,6 +5,7 @@ body {
         sans-serif;
     color: white;
     overflow: hidden;
+    background-color: #1E553E;
 }
 
 canvas {
@@ -173,12 +174,6 @@ button {
             align-items: stretch;
             margin-bottom: 4px;
 
-            input {
-                font-size: 1rem;
-                width: 100%;
-                font-weight: bold;
-                padding-left: 4px;
-            }
         }
 
     }
@@ -315,4 +310,15 @@ button {
 
 .gutter {
     padding-bottom: 2rem !important;
+}
+
+input:not([type='file']):not([type='button']):not([type='checkbox']):not([type='radio']) {
+    font-size: 1rem;
+    width: 100%;
+    font-weight: bold;
+    padding-left: 4px;
+    border: 2px solid darkgray;
+    border-radius: 4px;
+    margin-right: 4px;
+    box-sizing: border-box;
 }

@@ -1,4 +1,4 @@
-import { Graphics, Sprite, generateUID, resetUids, uid } from "pixi.js";
+import { Graphics, Sprite } from "pixi.js";
 import IStackable, { isIStackable } from "./interfaces/IStackable";
 import IDraggable, { isIDraggable } from "./interfaces/IDraggable";
 import GameObject from "./GameObject";
@@ -29,7 +29,7 @@ export default class Stack extends GameObject implements IDraggable, IStackable,
         this.canStack = true;
 
         this.on('destroyed', () => {
-            items.forEach((item) => item.destroy());
+            this.items.forEach((item) => item.destroy());
         })
 
         this.on('pointerdown', () => {
@@ -167,6 +167,7 @@ export default class Stack extends GameObject implements IDraggable, IStackable,
         this.updateGraphics();
         item.removeFromParent();
         if (item instanceof Stack) {
+            item.items = [];
             item.destroy();
         }
         return this;

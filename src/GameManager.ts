@@ -1,4 +1,4 @@
-import { Application, Assets, Texture, Sprite, FederatedPointerEvent, Spritesheet, Text, EventsTicker, Graphics, Bounds, removeItems } from 'pixi.js';
+import { Application, Assets, Texture, Sprite, FederatedPointerEvent, Spritesheet, Text, EventsTicker, Graphics } from 'pixi.js';
 import { DropShadowFilter, OutlineFilter } from "pixi-filters"
 import Camera from './game-objects/Camera';
 import { DataEventData, PeerRoom } from './PeerRoom';
@@ -634,15 +634,14 @@ export default class GameManager {
         this.app.stage.addChild(this.peekView);
 
         const selectionBox = new Graphics();
-        selectionBox.rect(0, 0, 10, 10).fill({ color: 0x00ff00, alpha: 0.1 });
-        this.camera.addChild(selectionBox);
+        selectionBox.rect(0, 0, 10, 10).fill({ color: 0x000000, alpha: 0.1 });
+        this.app.stage.addChild(selectionBox);
 
         let selectionFirstPoint: Vector | null = null;
 
         this.app.stage.on('pointerdown', (event) => {
-            const local = this.camera.toLocal(event.global);
+            const local = event.global;
             selectionFirstPoint = new Vector(local.x, local.y);
-            selectionBox.angle = -this.camera.angle;
         });
         this.app.stage.on('pointerup', (event) => {
             selectionFirstPoint = null;
@@ -653,7 +652,7 @@ export default class GameManager {
 
         this.app.stage.on('pointermove', (event) => {
             if (selectionFirstPoint !== null && !this.dragInfo.isDragging) {
-                const local = this.camera.toLocal(event.global);
+                const local = event.global;
                 const minX = Math.min(local.x, selectionFirstPoint.x);
                 const minY = Math.min(local.y, selectionFirstPoint.y);
                 const maxX = Math.max(local.x, selectionFirstPoint.x);
@@ -663,7 +662,6 @@ export default class GameManager {
                 selectionBox.width = maxX - minX;
                 selectionBox.height = maxY - minY;
                 const bounds = selectionBox.getBounds(true);
-
                 this.targets.length = 0;
                 this.gameObjects.forEach((go) => {
                     if (go.parent) {
@@ -747,7 +745,13 @@ export default class GameManager {
             }
 
             const currentTargets = [...this.targets];
-            if (this.hoverTarget && !currentTargets.includes(this.hoverTarget)) currentTargets.push(this.hoverTarget);
+            if (this.hoverTarget) {
+                const hoverIndex = currentTargets.indexOf(this.hoverTarget);
+                if (hoverIndex > -1) {
+                    currentTargets.splice(hoverIndex, 1);
+                }
+                currentTargets.unshift(this.hoverTarget)
+            };
 
             if (currentTargets.length > 0) {
                 let total = 0;
@@ -757,7 +761,8 @@ export default class GameManager {
                 total = values.reduce((total, current) => total + current);
 
                 if (currentTargets[0] && !currentTargets[0].destroyed) {
-                    this.tooltip.position = this.app.stage.toLocal({ x: currentTargets[0].x, y: currentTargets[0].y + currentTargets[0].getLocalBounds().top - 20 }, currentTargets[0].parent);
+                    this.tooltip.position = this.app.stage.toLocal(currentTargets[0], currentTargets[0].parent);
+                    this.tooltip.position.y = currentTargets[0].getBounds().top - 10;
                     if (currentTargets.length > 1 && currentTargets.every((item) => item instanceof Dice)) {
                         this.tooltip.text = `${values.join(' + ')} = ${total}`;
                     } else {
