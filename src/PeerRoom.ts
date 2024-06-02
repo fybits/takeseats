@@ -29,7 +29,8 @@ export type DataEventData =
     | { type: 'player-disconnected', message: null }
     | { type: 'update-card-hidden', message: { card_id: number, handIndex: number, state: 'enter' | 'leave' } }
     | { type: 'lock-object', message: { target: number, locked: boolean } }
-
+    | { type: 'destroy-object', message: { target: number } }
+    | { type: 'clone-object', message: { target: number } }
 export class PeerRoom {
     private members: DataConnection[] = [];
     private peer: Peer;
@@ -47,7 +48,7 @@ export class PeerRoom {
         });
         this.peer.on('error', (err) => { console.error(`${err.name}: ${err.message} [${err.type}]`) })
         this.peer.on('connection', (member) => this.addDataConnectionEventHandlers(member, true));
-        window.addEventListener('beforeunload', this.unloadListener)
+        window.addEventListener('unload', this.unloadListener)
     }
 
     private emit(address: string, data: DataEventData) {
@@ -105,7 +106,7 @@ export class PeerRoom {
 
     destroy() {
         this.peer.destroy();
-        window.removeEventListener('beforeunload', this.unloadListener)
+        window.removeEventListener('unload', this.unloadListener)
     }
 
     address() {

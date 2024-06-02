@@ -257,10 +257,66 @@ export default class GameManager {
                         }
                     }
                     break;
+                case 'destroy-object':
+                    if (address !== room.address()) {
+                        const object = this.gameObjects.get(message.target);
+                        if (object) {
+                            object.destroy();
+                        }
+                    }
+                    break;
+                case 'clone-object':
+                    if (address !== room.address()) {
+                        const object = this.gameObjects.get(message.target);
+                        if (object) {
+                            this.duplicateObject(object);
+                        }
+                    }
+                    break;
 
             }
         });
     };
+
+    deserialize(object: SerializedObject): GameObject | null {
+        let createdObject: GameObject | null = null;
+        if (object.type === 'card') {
+            const card = new Card(GetTexture(object.face), GetTexture(object.back), object.width, object.height);
+            if (object.isFlipped) card.flip();
+            if (!object.inStack) this.camera.addChild(card);
+            createdObject = card;
+        }
+        if (object.type === 'stack') {
+            const cards = object.items.map((i) => this.gameObjects.get(i)) as (GameObject & IStackable)[];
+            const stack = new Stack(cards);
+            this.camera.addChild(stack);
+            createdObject = stack;
+        }
+        if (object.type === 'dice' || object.type === 'text-dice') {
+            const spritesheet = Assets.get<Spritesheet>(`d${object.size}-sheet`);
+            let dice: Dice;
+            switch (object.type) {
+                case 'dice':
+                    dice = new Dice(spritesheet, object.size);
+                    break;
+                case 'text-dice':
+                    dice = new TextDice(spritesheet, object.size);
+                    break;
+            }
+            this.camera.addChild(dice);
+            dice.value = object.value;
+            createdObject = dice;
+        }
+        if (createdObject) {
+            createdObject.x = object.x;
+            createdObject.y = object.y;
+            createdObject.desiredPosition.x = object.x;
+            createdObject.desiredPosition.y = object.y;
+            createdObject.angle = object.angle;
+            createdObject.locked = object.locked;
+        }
+        return createdObject;
+    }
 
     syncObjects(state: { gameObjects: SerializedObject[]; hands: { items: number[]; player: string | null; }[]; nextUID: number; }) {
         console.log('started syncing objects', state);
@@ -269,41 +325,8 @@ export default class GameManager {
         resetUIDs(-100000);
         state.gameObjects.sort((a, b) => a.type.localeCompare(b.type));
         for (let obj of state.gameObjects) {
-            let createdObject: GameObject | null = null;
-            if (obj.type === 'card') {
-                const card = new Card(GetTexture(obj.face), GetTexture(obj.back), obj.width, obj.height);
-                if (obj.isFlipped) card.flip();
-                if (!obj.inStack) this.camera.addChild(card);
-                createdObject = card;
-            }
-            if (obj.type === 'stack') {
-                const cards = obj.items.map((i) => this.gameObjects.get(i)) as (GameObject & IStackable)[];
-                const stack = new Stack(cards);
-                this.camera.addChild(stack);
-                createdObject = stack;
-            }
-            if (obj.type === 'dice' || obj.type === 'text-dice') {
-                const spritesheet = Assets.get<Spritesheet>(`d${obj.size}-sheet`);
-                let dice: Dice;
-                switch (obj.type) {
-                    case 'dice':
-                        dice = new Dice(spritesheet, obj.size);
-                        break;
-                    case 'text-dice':
-                        dice = new TextDice(spritesheet, obj.size);
-                        break;
-                }
-                this.camera.addChild(dice);
-                dice.value = obj.value;
-                createdObject = dice;
-            }
+            const createdObject = this.deserialize(obj);
             if (createdObject) {
-                createdObject.x = obj.x;
-                createdObject.y = obj.y;
-                createdObject.desiredPosition.x = obj.x;
-                createdObject.desiredPosition.y = obj.y;
-                createdObject.angle = obj.angle;
-                createdObject.locked = obj.locked;
                 this.gameObjects.delete(createdObject.id);
                 createdObject.id = obj.id;
                 this.gameObjects.set(createdObject.id, createdObject);
@@ -453,7 +476,7 @@ export default class GameManager {
     onDragMove(event: FederatedPointerEvent) {
         if (this.dragInfo.isDragging === false) return;
         this.targets.forEach(item => {
-            if (isIDraggable(item)) {
+            if (isIDraggable(item) && !item.destroyed) {
                 if (item.parent) {
                     const center = this.camera.screenToWorldPoint(new Vector(event.screen.x, event.screen.y));
                     const offset = this.dragInfo.offsets.get(item.id)!;
@@ -545,6 +568,28 @@ export default class GameManager {
                 }
             }
         })
+    }
+
+    duplicateObject(target: GameObject) {
+        let duplicatedObject: GameObject | null = null;
+        if (target instanceof Stack) {
+            if (target.canStack) {
+                const items: number[] = target.items.map((item) => {
+                    return this.deserialize(item.serialize())!.id;
+                });
+                const serializedStack = target.serialize();
+                if (serializedStack.type === 'stack') {
+                    serializedStack.items = items;
+                }
+                duplicatedObject = this.deserialize(serializedStack);
+            }
+        } else {
+            duplicatedObject = this.deserialize(target.serialize());
+        }
+        if (duplicatedObject) {
+            duplicatedObject.desiredPosition.x += duplicatedObject.width + 10;
+            duplicatedObject.desiredPosition.y += 10;
+        }
     }
 
     async startGame() {
@@ -646,7 +691,6 @@ export default class GameManager {
                 this.camera.desiredZoom = Math.min(Math.max(this.camera.desiredZoom - event.deltaY / 2000, 0.2), 2);
             }
         })
-
         this.app.stage.on('pointermove', () => {
             this.room.send({
                 type: 'player-cursor', message: {
@@ -655,6 +699,7 @@ export default class GameManager {
             })
         })
 
+        EventsTicker.interactionFrequency = 1
         this.app.stage.eventMode = 'dynamic';
         this.app.stage.hitArea = this.app.screen;
 
@@ -690,14 +735,16 @@ export default class GameManager {
                 }
             }
             const input: Vector = new Vector();
-            if (Controls.instance.keyboard.get('w') === KeyState.HELD)
-                input.y += -1;
-            if (Controls.instance.keyboard.get('a') === KeyState.HELD)
-                input.x += -1;
-            if (Controls.instance.keyboard.get('s') === KeyState.HELD)
-                input.y += 1;
-            if (Controls.instance.keyboard.get('d') === KeyState.HELD)
-                input.x += 1;
+            if (Controls.instance.keyboard.get('control') !== KeyState.HELD) {
+                if (Controls.instance.keyboard.get('w') === KeyState.HELD)
+                    input.y += -1;
+                if (Controls.instance.keyboard.get('a') === KeyState.HELD)
+                    input.x += -1;
+                if (Controls.instance.keyboard.get('s') === KeyState.HELD)
+                    input.y += 1;
+                if (Controls.instance.keyboard.get('d') === KeyState.HELD)
+                    input.x += 1;
+            }
 
             const currentTargets = [...this.targets];
             if (this.hoverTarget && !currentTargets.includes(this.hoverTarget)) currentTargets.push(this.hoverTarget);
@@ -775,6 +822,30 @@ export default class GameManager {
                 angle -= 1;
             if (Controls.instance.keyboard.get('e') === KeyState.HELD)
                 angle += 1;
+
+            if (Controls.instance.keyboard.get('delete') === KeyState.PRESSED) {
+                currentTargets.forEach((target) => {
+                    target.destroy();
+                    gm.room.send({
+                        type: 'destroy-object',
+                        message: {
+                            target: target.id,
+                        },
+                    });
+                })
+            }
+
+            if (Controls.instance.keyboard.get('control') === KeyState.HELD && Controls.instance.keyboard.get('d') === KeyState.PRESSED) {
+                this.targets.forEach((target) => {
+                    this.duplicateObject(target);
+                    this.room.send({
+                        type: 'clone-object',
+                        message: {
+                            target: target.id,
+                        },
+                    })
+                })
+            }
 
             if (Controls.instance.keyboard.get('alt') === KeyState.HELD) {
                 if (this.hoverTarget) {

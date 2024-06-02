@@ -28,6 +28,10 @@ export default class Stack extends GameObject implements IDraggable, IStackable,
         this.addFilter('deck-details', new DropShadowFilter({ offset: { x: 0, y: this.items.length * 2 * gm.camera.scale.x }, color: 0xcccccc, blur: 0, alpha: 1 }));
         this.canStack = true;
 
+        this.on('destroyed', () => {
+            items.forEach((item) => item.destroy());
+        })
+
         this.on('pointerdown', () => {
             this.onDragStart();
         });

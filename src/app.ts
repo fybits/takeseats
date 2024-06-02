@@ -504,6 +504,10 @@ export const GetTexture = (key: string) => {
         globalThis.gm = gameManager;
 
         gameManager.startGame();
+        window.addEventListener('beforeunload', function (e) {
+            e.stopPropagation(); e.preventDefault();
+            return false;
+        });
     };
 
     hostBtn.addEventListener('click', (e) => {
