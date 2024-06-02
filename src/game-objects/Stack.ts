@@ -48,24 +48,6 @@ export default class Stack extends GameObject implements IDraggable, IStackable,
                 })
             }
         });
-        this.on('pointerover', () => {
-            if (!this.locked) {
-                if ('length' in this.filters) {
-                    this.addFilter('hover-outline', new OutlineFilter({ thickness: 5, color: 'yellow' }));
-                }
-                this.cursor = "grab";
-            }
-            gm.hoverTarget = this;
-
-        });
-        this.on('pointerout', () => {
-            if ('length' in this.filters) {
-                this.removeFilter('hover-outline');
-            }
-            gm.hoverTarget = null;
-        });
-
-
         this.currentGraphics = new Sprite();
         this.currentGraphics.anchor.x = 0.5;
         this.currentGraphics.anchor.y = 0.5;

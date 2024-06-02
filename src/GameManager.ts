@@ -427,8 +427,9 @@ export default class GameManager {
 
     onDragStart(item: GameObject & IDraggable) {
         if (!this.targets.includes(item)) {
-            this.targets.forEach((i) => i.removeFilter('outline'));
+            this.targets.forEach((i) => !i.destroyed && i.removeFilter('outline'));
             this.targets.length = 0;
+            item.addFilter('outline', new OutlineFilter({ thickness: 5, color: 'yellow' }));
             this.targets.push(item);
         }
         const itemOffset = this.camera.toLocal(item, item.parent);
@@ -597,10 +598,14 @@ export default class GameManager {
             const local = this.camera.toLocal(event.global);
             selectionFirstPoint = new Vector(local.x, local.y);
             selectionBox.angle = -this.camera.angle;
-        })
+        });
         this.app.stage.on('pointerup', (event) => {
             selectionFirstPoint = null;
-        })
+        });
+        this.app.stage.on('pointerupoutside', () => {
+            selectionFirstPoint = null;
+        });
+
         this.app.stage.on('pointermove', (event) => {
             if (selectionFirstPoint !== null && !this.dragInfo.isDragging) {
                 const local = this.camera.toLocal(event.global);
@@ -630,7 +635,7 @@ export default class GameManager {
                 selectionBox.width = 1;
                 selectionBox.height = 1;
             }
-        })
+        });
 
         this.app.stage.on('pointerup', this.onDragEnd, this);
         this.app.stage.on('pointerupoutside', this.onDragEnd, this);
@@ -650,7 +655,6 @@ export default class GameManager {
             })
         })
 
-        console.log(EventsTicker.interactionFrequency = 1)
         this.app.stage.eventMode = 'dynamic';
         this.app.stage.hitArea = this.app.screen;
 
@@ -665,7 +669,6 @@ export default class GameManager {
         })
 
         this.app.ticker.add((ticker) => {
-            console.log(this.hoverTarget)
             for (const child of this.app.stage.children) {
                 if (isIUpdatable(child)) {
                     child.Update(ticker.deltaTime);
@@ -707,7 +710,7 @@ export default class GameManager {
                 total = values.reduce((total, current) => total + current);
 
                 if (currentTargets[0] && !currentTargets[0].destroyed) {
-                    this.tooltip.position = this.app.stage.toLocal({ x: currentTargets[0].x, y: currentTargets[0].y + currentTargets[0].getLocalBounds().top }, currentTargets[0].parent);
+                    this.tooltip.position = this.app.stage.toLocal({ x: currentTargets[0].x, y: currentTargets[0].y + currentTargets[0].getLocalBounds().top - 20 }, currentTargets[0].parent);
                     if (currentTargets.length > 1 && currentTargets.every((item) => item instanceof Dice)) {
                         this.tooltip.text = `${values.join(' + ')} = ${total}`;
                     } else {
@@ -716,6 +719,8 @@ export default class GameManager {
                 } else {
                     this.tooltip.text = '';
                 }
+            } else {
+                this.tooltip.text = '';
             }
 
             if (Controls.instance.keyboard.get('l') === KeyState.PRESSED) {

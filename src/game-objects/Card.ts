@@ -64,17 +64,6 @@ export default class Card extends GameObject implements IDraggable, IStackable, 
                 }
             }
         });
-        this.on('pointerover', () => {
-            if (!this.locked) {
-                this.addFilter('hover-outline', new OutlineFilter({ thickness: 5, color: 'yellow' }));
-                this.cursor = "grab";
-            }
-            gm.hoverTarget = this;
-        });
-        this.on('pointerout', () => {
-            this.removeFilter('hover-outline');
-            gm.hoverTarget = null;
-        });
     }
     onTakeFromStack(): GameObject | null {
         throw new Error("Method not implemented.");

@@ -1,9 +1,9 @@
-import { Container, DestroyOptions, Filter, Sprite, generateUID, uid } from "pixi.js";
+import { Container, DestroyOptions, Filter, HardMixBlend, Sprite, generateUID, uid } from "pixi.js";
 import uniqueID from "../utils/uniqueID";
 import { SerializedObject } from "../GameManager";
 import { Vector } from "../utils/Vector";
 import IUpdatable from "./interfaces/IUpdatable";
-import { DropShadowFilter } from "pixi-filters";
+import { DropShadowFilter, OutlineFilter } from "pixi-filters";
 
 export default abstract class GameObject extends Container implements IUpdatable {
     id: number;
@@ -31,6 +31,23 @@ export default abstract class GameObject extends Container implements IUpdatable
         this.on('destroyed', () => {
             gm.gameObjects.delete(this.id);
         })
+
+        this.on('pointerover', () => {
+            if (!this.locked) {
+                this.addFilter('outline', new OutlineFilter({ thickness: 5, color: 'yellow' }));
+                this.cursor = "grab";
+            }
+            if (gm.hoverTarget && !gm.hoverTarget.destroyed && gm.hoverTarget !== this && !gm.targets.includes(gm.hoverTarget)) {
+                gm.hoverTarget.removeFilter('outline');
+            }
+            gm.hoverTarget = this;
+        });
+        this.on('pointerout', () => {
+            if (!gm.targets.includes(this)) {
+                this.removeFilter('outline');
+            }
+            gm.hoverTarget = null;
+        });
     }
 
 
