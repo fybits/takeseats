@@ -253,3 +253,7 @@ button {
         width: 360px;
     }
 }
+
+*[hidden] {
+    display: none !important;
+}

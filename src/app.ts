@@ -504,6 +504,7 @@ export const GetTexture = (key: string) => {
         globalThis.gm = gameManager;
 
         gameManager.startGame();
+        document.querySelector<HTMLElement>('#toolbar')!.hidden = false;
         window.addEventListener('beforeunload', function (e) {
             e.stopPropagation(); e.preventDefault();
             return false;
