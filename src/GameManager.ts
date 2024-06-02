@@ -68,9 +68,10 @@ export default class GameManager {
 
     playersListElement: HTMLDivElement;
 
-    constructor(app: Application, camera: Camera, room: PeerRoom, isHost: boolean) {
+    constructor(app: Application, room: PeerRoom, isHost: boolean) {
         this.app = app;
-        this.camera = camera;
+        this.camera = new Camera();;
+        this.app.stage.addChild(this.camera);
         this.room = room;
         this.players = new Map<string, Player>();
         this.gameObjects = new Map<number, GameObject>();
@@ -509,7 +510,7 @@ export default class GameManager {
                     const force = new Vector();
                     const mouseMovement = Controls.instance.mouse.movement;
                     if (mouseMovement.length > 2) {
-                        const dir = mouseMovement.normalized;
+                        const dir = mouseMovement.normalized.rotate(-this.camera.rotation);
                         const len = Math.min(mouseMovement.length, 5);
                         force.x = dir.x * len * 10;
                         force.y = dir.y * len * 10;
