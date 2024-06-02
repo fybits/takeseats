@@ -34,7 +34,7 @@ const canvas = document.querySelector<HTMLCanvasElement>('canvas')!;
 canvas.tabIndex = 0;
 canvas.autofocus = true;
 
-const lobbyControlsContainer = document.querySelector<HTMLDivElement>('div#lobby-controls')!;
+const mainMenuView = document.querySelector<HTMLDivElement>('div#main-menu')!;
 
 const nicknameInput = document.querySelector<HTMLInputElement>('input#nickname')!;
 const hostBtn = document.querySelector<HTMLButtonElement>('button#host')!;
@@ -138,7 +138,7 @@ export const GetTexture = (key: string) => {
             console.log("connect")
             room.connectToMember(lobbyKey);
         }
-        lobbyControlsContainer.hidden = true;
+        mainMenuView.hidden = true;
         const gameManager = new GameManager(app, camera, room, isHost);
 
         //#region ui

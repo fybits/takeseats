@@ -12,18 +12,28 @@
 <body>
     <canvas></canvas>
     <div id="ui">
-        <div id="lobby-controls">
-            <div>
-                <label>nickname</label>
-                <br>
-                <input id="nickname" name="nickname" />
-                <button id="host">Host</button>
-            </div>
-            <div>
-                <label>lobby name</label>
-                <br>
-                <input id="lobby" name="lobby" />
-                <button id="join">Join</button>
+        <div id="main-menu">
+            <h1 class="title-logo">TAKE SEATS!</h1>
+            <div id="lobby-controls" class="dialog">
+                <div class="dialog-header">
+                    <h2>Host or Join the game</h2>
+                </div>
+                <div class="dialog-body gutter">
+                    <div>
+                        <label>nickname</label>
+                        <div class="row">
+                            <input id="nickname" name="nickname" placeholder="your name" />
+                            <button class="submit" id="host">Host</button>
+                        </div>
+                    </div>
+                    <div>
+                        <label>lobby name</label>
+                        <div class="row">
+                            <input id="lobby" name="lobby" placeholder="your friend's name" />
+                            <button class="submit" id="join">Join</button>
+                        </div>
+                    </div>
+                </div>
             </div>
         </div>
         <form id="card-dialog" class="dialog" draggable hidden>
