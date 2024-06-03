@@ -2,7 +2,6 @@
 import { Application, Assets, Spritesheet, SpritesheetData, Texture } from 'pixi.js';
 import { DataEventData, PeerRoom } from './PeerRoom';
 import Controls from './Controls';
-import Camera from './game-objects/Camera';
 import GameManager, { SerializedObject } from './GameManager';
 import Card from './game-objects/Card';
 import Stack from './game-objects/Stack';

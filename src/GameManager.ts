@@ -707,9 +707,13 @@ export default class GameManager {
         this.camera.position.y = center.y
 
         window.addEventListener('resize', () => {
-            const center = new Vector(this.app.screen.width / 2, this.app.screen.height / 2);
-            this.camera.position.x = center.x
-            this.camera.position.y = center.y
+            requestAnimationFrame(() => {
+                this.app.queueResize();
+                const center = new Vector(this.app.screen.width / 2, this.app.screen.height / 2);
+                this.camera.position.x = center.x
+                this.camera.position.y = center.y
+            })
+            console.log('resize')
         })
 
         this.app.ticker.add((ticker) => {
