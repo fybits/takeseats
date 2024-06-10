@@ -39,9 +39,6 @@ const hostBtn = document.querySelector<HTMLButtonElement>('button#host')!;
 const lobbyInput = document.querySelector<HTMLInputElement>('input#lobby')!;
 const joinBtn = document.querySelector<HTMLButtonElement>('button#join')!;
 
-// const createCardForm = dragElement(document.querySelector<HTMLFormElement>('#card-dialog')!);
-// const createDeckForm = dragElement(document.querySelector<HTMLFormElement>('#deck-dialog')!);
-
 const closeBtns = document.querySelectorAll<HTMLInputElement>('.close');
 closeBtns.forEach((btn) => {
     btn.onclick = (e) => (e.target as HTMLElement).parentElement!.parentElement!.hidden = true;

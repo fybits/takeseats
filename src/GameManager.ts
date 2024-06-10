@@ -641,8 +641,10 @@ export default class GameManager {
         let selectionFirstPoint: Vector | null = null;
 
         this.app.stage.on('pointerdown', (event) => {
-            const local = event.global;
-            selectionFirstPoint = new Vector(local.x, local.y);
+            if (event.button === 0) {
+                const local = event.global;
+                selectionFirstPoint = new Vector(local.x, local.y);
+            }
         });
         this.app.stage.on('pointerup', (event) => {
             selectionFirstPoint = null;
